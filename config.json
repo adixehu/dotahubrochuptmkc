@@ -160,6 +160,21 @@
       "owner_id": 8954270698,
       "auto_start": false,
       "_uid": "1815701eadb5"
+    },
+    "473501bad8de": {
+      "session_name": "13662062666:qypXKmalAGwZRT:6:AYnPh3gXYpvw2U4eRI6nyTcexVn5k-g1H2Jx1D9Jsg",
+      "session_id": "13662062666:qypXKmalAGwZRT:6:AYnPh3gXYpvw2U4eRI6nyTcexVn5k-g1H2Jx1D9Jsg",
+      "ua": "Mozilla/5.0 (Linux; Android 13; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
+      "gc_name_text": "Hater Tmkc !! \ud83e\udebc !!",
+      "msg_text": "BOBBY/KIWI HATER",
+      "thread_id": "27112012",
+      "delay_min": 0.5,
+      "delay_max": 0.6,
+      "rename_min": 3.0,
+      "rename_max": 10.0,
+      "owner_id": 8923578472,
+      "auto_start": true,
+      "_uid": "473501bad8de"
     }
   }
 }
