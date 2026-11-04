@@ -190,6 +190,21 @@
       "owner_id": 8954270698,
       "auto_start": true,
       "_uid": "efa21984bc95"
+    },
+    "9b2a16d7a71a": {
+      "session_name": "Bobby",
+      "session_id": "13662062666:qypXKmalAGwZRT:6:AYnPh3gXYpvw2U4eRI6nyTcexVn5k-g1H2Jx1D9Jsg",
+      "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+      "gc_name_text": "Sex with spammer",
+      "msg_text": "Chup",
+      "thread_id": "22",
+      "delay_min": 1.0,
+      "delay_max": 2.0,
+      "rename_min": 1.0,
+      "rename_max": 5.0,
+      "owner_id": 8923578472,
+      "auto_start": true,
+      "_uid": "9b2a16d7a71a"
     }
   }
 }
