@@ -57,7 +57,7 @@ GITHUB_PAT = os.environ.get("GH_PAT", "")
 if not GITHUB_PAT:
     print("⚠️ GH_PAT environment variable is missing! GitHub Sync will fail.", flush=True)
 
-GH_REPO = "adixheu/dotahubrochuptmkc"
+GH_REPO = "adixehu/dotahubrochuptmkc"
 GH_FILE = "config.json"
 GH_BRANCH = "main"
 
