@@ -175,6 +175,21 @@
       "owner_id": 8923578472,
       "auto_start": false,
       "_uid": "473501bad8de"
+    },
+    "efa21984bc95": {
+      "session_name": "aaravwinss",
+      "session_id": "74739548423%3AVz5ijTCGJMxnlM%3A6%3AAYmwmmNlkxRQoOWx0Jf5NNkiRiotqvwS8GcBkhtZtg",
+      "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+      "gc_name_text": "Mikey pilee",
+      "msg_text": "YASH-MEMAX-AARYAV-AYAN-MIKEY-SCAR-SINISTER",
+      "thread_id": "2137199453833921",
+      "delay_min": 2.0,
+      "delay_max": 2.5,
+      "rename_min": 2.5,
+      "rename_max": 5.0,
+      "owner_id": 8954270698,
+      "auto_start": true,
+      "_uid": "efa21984bc95"
     }
   }
 }
