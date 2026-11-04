@@ -48,19 +48,16 @@ print("[BOOT] All imports done. Starting bot...", flush=True)
 
 
 # ═══════════════════════════════════════════════════════════
-# CONFIG & TOKENS
+# CONFIG & TOKENS (Loaded from GitHub Secrets)
 # ═══════════════════════════════════════════════════════════
-BOT_TOKEN = "8762369265:AAGIth-s0NMPojOJIq_Rc_Mgh4vdMxXdlzs"
+BOT_TOKEN = os.environ.get("TG_TOKEN", "8762369265:AAGIth-s0NMPojOJIq_Rc_Mgh4vdMxXdlzs")
 OWNER_ID = 8043772198
 
-# ✅ Obfuscated PAT (GitHub Scanner bypass)
-P1 = "ghp"
-P2 = "_EasM0RYssfPh9r"
-P3 = "M698qhPLoJx1nI"
-P4 = "cM4GppQz"
-GITHUB_PAT = f"{P1}{P2}{P3}{P4}"
+GITHUB_PAT = os.environ.get("GH_PAT", "")
+if not GITHUB_PAT:
+    print("⚠️ GH_PAT environment variable is missing! GitHub Sync will fail.", flush=True)
 
-GH_REPO = "adixheu/dotahubrochuptmkc"  # ✅ Updated to your new repo
+GH_REPO = "adixheu/dotahubrochuptmkc"
 GH_FILE = "config.json"
 GH_BRANCH = "main"
 
@@ -132,6 +129,7 @@ def esc(s):
 # ═══════════════════════════════════════════════════════════
 def gh_fetch_config():
     global GH_SHA, AUTHORIZED_USERS
+    if not GITHUB_PAT: return {}
     url = f"https://api.github.com/repos/{GH_REPO}/contents/{GH_FILE}"
     headers = {"Authorization": f"token {GITHUB_PAT}"}
     try:
@@ -161,6 +159,7 @@ def gh_fetch_config():
 
 def gh_push_config(silent=True):
     global GH_SHA
+    if not GITHUB_PAT: return
     with CONFIG_LOCK:
         cfg = {"users": list(AUTHORIZED_USERS),
                "sessions": {k: v.data for k, v in SESSIONS.items()}}
@@ -728,7 +727,11 @@ async def show_session_detail(update: Update, context: ContextTypes.DEFAULT_TYPE
 # ═══════════════════════════════════════════════════════════
 async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
-    await q.answer()
+    try:
+        await q.answer()
+    except Exception:
+        pass  
+        
     data = q.data; uid = q.from_user.id; chat_id = q.message.chat_id
     if data == "noop": return
     if data == "back_main":
@@ -736,7 +739,10 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update_panel(context, chat_id, uid)
     elif data == "dashboard": await show_dashboard(update, context)
     elif data == "sys_view":
-        if uid != OWNER_ID: return await q.answer("Owner only", show_alert=True)
+        if uid != OWNER_ID:
+            try: await q.answer("Owner only", show_alert=True)
+            except: pass
+            return
         s = get_sys_stats()
         await update_panel(context, chat_id, uid, fmt_sys_full(s),
             InlineKeyboardMarkup([[InlineKeyboardButton("🔄 Refresh", callback_data="sys_view")],
@@ -756,17 +762,21 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 f"➕ <b>Add Session ({wiz['step']}/9)</b>\n\n{STEP_PROMPTS[wiz['step']]}",
                 chat_id=chat_id, message_id=wiz["msg_id"],
                 reply_markup=wizard_kb(wiz["step"]), parse_mode="HTML")
-        else: await q.answer("Cannot go back", show_alert=True)
+        else: 
+            try: await q.answer("Cannot go back", show_alert=True)
+            except: pass
     elif data.startswith("view_"): await show_session_detail(update, context, data[5:])
     elif data.startswith("stop_"):
         uk = data[5:]
         w = SESSIONS.get(uk)
         if not w: return await show_dashboard(update, context)
         if w.data.get("owner_id") != uid and uid != OWNER_ID:
-            return await q.answer("Not yours", show_alert=True)
+            try: return await q.answer("Not yours", show_alert=True)
+            except: return
         w.stop(); w.data["auto_start"] = False
         await asyncio.to_thread(gh_push_config)
-        await q.answer("🛑 Stopping...")
+        try: await q.answer("🛑 Stopping...")
+        except: pass
         await asyncio.sleep(1)
         await show_session_detail(update, context, uk)
     elif data.startswith("start_"):
@@ -774,14 +784,17 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         w = SESSIONS.get(uk)
         if not w: return await show_dashboard(update, context)
         if w.data.get("owner_id") != uid and uid != OWNER_ID:
-            return await q.answer("Not yours", show_alert=True)
-        await q.answer("▶️ Starting...")
+            try: return await q.answer("Not yours", show_alert=True)
+            except: return
+        try: await q.answer("▶️ Starting...")
+        except: pass
         ok, err = await asyncio.to_thread(w.start)
         if ok:
             w.data["auto_start"] = True
             await asyncio.to_thread(gh_push_config)
         else:
-            await q.answer(f"❌ {err[:100]}", show_alert=True)
+            try: await q.answer(f"❌ {err[:100]}", show_alert=True)
+            except: pass
         await show_session_detail(update, context, uk)
     elif data.startswith("adj_"):
         parts = data.split("_")
@@ -793,7 +806,8 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             w = SESSIONS.get(uk)
             if not w: return
             if w.data.get("owner_id") != uid and uid != OWNER_ID:
-                return await q.answer("Not yours", show_alert=True)
+                try: return await q.answer("Not yours", show_alert=True)
+                except: return
             if param == "m":
                 nm = max(0.01, float(w.data.get("delay_min", 0.1)) + delta)
                 nx = max(nm, float(w.data.get("delay_max", 0.2)) + delta)
@@ -803,10 +817,13 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 nx = max(nm, float(w.data.get("rename_max", 15)) + delta)
                 w.data["rename_min"] = round(nm, 1); w.data["rename_max"] = round(nx, 1)
             await asyncio.to_thread(gh_push_config)
-            await q.answer(f"✅ {param} {delta:+.1f}")
+            try: await q.answer(f"✅ {param} {delta:+.1f}")
+            except: pass
             await show_session_detail(update, context, uk)
     elif data == "list_all":
-        if uid != OWNER_ID: return
+        if uid != OWNER_ID:
+            try: return await q.answer("Owner only", show_alert=True)
+            except: return
         if not SESSIONS:
             return await update_panel(context, chat_id, uid, "No sessions.",
                 InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data="back_main")]]))
@@ -820,7 +837,9 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update_panel(context, chat_id, uid, txt,
             InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data="back_main")]]))
     elif data == "manage_users":
-        if uid != OWNER_ID: return
+        if uid != OWNER_ID:
+            try: return await q.answer("Owner only", show_alert=True)
+            except: return
         txt = "👥 <b>Authorized Users</b>\n\n"
         for u in AUTHORIZED_USERS: txt += f"• <code>{u}</code>\n"
         txt += "\n/adduser 123456789\n/deluser 123456789"
@@ -866,7 +885,6 @@ def main():
 
     threading.Thread(target=gh_sync_loop, daemon=True).start()
 
-    # Stagger auto-start (5s gap between each session)
     for k, w in SESSIONS.items():
         if w.data.get("auto_start", False):
             print(f"▶️ Auto-start: {w.data.get('session_name', k)}", flush=True)
