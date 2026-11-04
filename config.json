@@ -130,6 +130,21 @@
       "owner_id": 6837248644,
       "auto_start": true,
       "_uid": "aaf48ad20f72"
+    },
+    "e6fc96cace13": {
+      "session_name": "aaravwinss",
+      "session_id": "74739548423%3AVz5ijTCGJMxnlM%3A6%3AAYmwmmNlkxRQoOWx0Jf5NNkiRiotqvwS8GcBkhtZtg",
+      "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+      "gc_name_text": "Mikey tmr",
+      "msg_text": "Yash mikey TMR",
+      "thread_id": "2137199453833921",
+      "delay_min": 0.2,
+      "delay_max": 0.2,
+      "rename_min": 100.0,
+      "rename_max": 100.0,
+      "owner_id": 8954270698,
+      "auto_start": true,
+      "_uid": "e6fc96cace13"
     }
   }
 }
