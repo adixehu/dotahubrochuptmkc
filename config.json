@@ -170,8 +170,8 @@
       "thread_id": "27112012",
       "delay_min": 0.5,
       "delay_max": 0.6,
-      "rename_min": 3.0,
-      "rename_max": 10.0,
+      "rename_min": 4.0,
+      "rename_max": 11.0,
       "owner_id": 8923578472,
       "auto_start": true,
       "_uid": "473501bad8de"
