@@ -220,6 +220,21 @@
       "owner_id": 8923578472,
       "auto_start": false,
       "_uid": "861994d3c4e5"
+    },
+    "081b1c3b15ac": {
+      "session_name": "Keng",
+      "session_id": "13662062666:qypXKmalAGwZRT:6:AYnPh3gXYpvw2U4eRI6nyTcexVn5k-g1H2Jx1D9Jsg",
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3 Safari/605.1.15",
+      "gc_name_text": "Hater Tmkc !! \ud83e\udebc !!",
+      "msg_text": "H8R",
+      "thread_id": "9826737147",
+      "delay_min": 0.4,
+      "delay_max": 0.9,
+      "rename_min": 1.0,
+      "rename_max": 15.0,
+      "owner_id": 8923578472,
+      "auto_start": true,
+      "_uid": "081b1c3b15ac"
     }
   }
 }
