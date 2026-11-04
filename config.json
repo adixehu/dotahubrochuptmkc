@@ -145,6 +145,21 @@
       "owner_id": 8954270698,
       "auto_start": false,
       "_uid": "e6fc96cace13"
+    },
+    "1815701eadb5": {
+      "session_name": "aaravwinss",
+      "session_id": "74739548423%3AVz5ijTCGJMxnlM%3A6%3AAYmwmmNlkxRQoOWx0Jf5NNkiRiotqvwS8GcBkhtZtg",
+      "ua": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
+      "gc_name_text": "Mikey tmkc",
+      "msg_text": "Mikey yash TMR",
+      "thread_id": "1579141453392486",
+      "delay_min": 0.2,
+      "delay_max": 0.5,
+      "rename_min": 100.0,
+      "rename_max": 140.0,
+      "owner_id": 8954270698,
+      "auto_start": true,
+      "_uid": "1815701eadb5"
     }
   }
 }
