@@ -6,7 +6,7 @@ on:
 jobs:
   run-bot:
     runs-on: ubuntu-22.04
-    timeout-minutes: 5
+    timeout-minutes: 355          # 👈 355 min (taaki 345 min run + kill ka time mile)
     concurrency:
       group: bot-chain
       cancel-in-progress: false
@@ -25,10 +25,9 @@ jobs:
 
     - name: Run + Chain
       env:
-        RUN_SECONDS: 60
+        RUN_SECONDS: 20700        # 👈 345 minutes (345 * 60 = 20700 seconds)
         REPO: ${{ github.repository }}
         WORKFLOW_NAME: "Bot Chain"
-        # ✅ Tokens Secrets se aayenge
         PAT_TOKEN: ${{ secrets.GH_PAT }}
         GH_PAT: ${{ secrets.GH_PAT }}
         TG_TOKEN: ${{ secrets.TG_TOKEN }}
@@ -41,7 +40,7 @@ jobs:
         MAIN_PID=$!
         echo "main.py PID: $MAIN_PID"
 
-        # 2. 60 sec wait
+        # 2. 345 min (20700 sec) wait
         sleep $RUN_SECONDS
 
         # 3. Find Workflow ID
