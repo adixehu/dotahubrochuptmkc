@@ -205,6 +205,21 @@
       "owner_id": 8923578472,
       "auto_start": false,
       "_uid": "9b2a16d7a71a"
+    },
+    "861994d3c4e5": {
+      "session_name": "Bobby",
+      "session_id": "13662062666:qypXKmalAGwZRT:6:AYnPh3gXYpvw2U4eRI6nyTcexVn5k-g1H2Jx1D9Jsg",
+      "ua": "Mozilla/5.0 (Linux; Android 13; CPH2451) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
+      "gc_name_text": "sex with spammer",
+      "msg_text": "Kiwi hater",
+      "thread_id": "9826737147",
+      "delay_min": 0.05,
+      "delay_max": 0.09,
+      "rename_min": 1.0,
+      "rename_max": 10.0,
+      "owner_id": 8923578472,
+      "auto_start": true,
+      "_uid": "861994d3c4e5"
     }
   }
 }
