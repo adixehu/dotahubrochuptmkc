@@ -2,7 +2,6 @@
   "users": [
     6837248644,
     8043772198,
-    8954270698,
     8772480152,
     7528333754
   ],
@@ -37,21 +36,6 @@
       "auto_start": true,
       "_uid": "49f9c87fa647"
     },
-    "81b1dd32f5fb": {
-      "session_name": "walterxspam31",
-      "session_id": "74179671305%3AY6F7iBfHxFJR65%3A9%3AAYlmlsUTaqQmORVYZktH9O-DBkWCjhiXAnsg6UUyqA",
-      "ua": "Mozilla/5.0 (Linux; Android 12; V2148A) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Mobile Safari/537.36",
-      "gc_name_text": "Oblivion Tmkc",
-      "msg_text": "Oblivion Tmkc",
-      "thread_id": "1454113899959741",
-      "delay_min": 0.35,
-      "delay_max": 0.4,
-      "rename_min": 100.0,
-      "rename_max": 200.0,
-      "owner_id": 8954270698,
-      "auto_start": false,
-      "_uid": "81b1dd32f5fb"
-    },
     "aaf48ad20f72": {
       "session_name": "14769417269%3Aq1k7AAFRvc5jsh%3A10%3AAYmWaZ7UAhpO3Mt9pzAvNKyeTAzkcmuQyzwb-xl3BQ",
       "session_id": "14769417269%3Aq1k7AAFRvc5jsh%3A10%3AAYmWaZ7UAhpO3Mt9pzAvNKyeTAzkcmuQyzwb-xl3BQ",
@@ -66,51 +50,6 @@
       "owner_id": 6837248644,
       "auto_start": false,
       "_uid": "aaf48ad20f72"
-    },
-    "e6fc96cace13": {
-      "session_name": "aaravwinss",
-      "session_id": "74739548423%3AVz5ijTCGJMxnlM%3A6%3AAYmwmmNlkxRQoOWx0Jf5NNkiRiotqvwS8GcBkhtZtg",
-      "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
-      "gc_name_text": "Mikey tmr",
-      "msg_text": "Yash mikey TMR",
-      "thread_id": "2137199453833921",
-      "delay_min": 0.6,
-      "delay_max": 0.6,
-      "rename_min": 98.0,
-      "rename_max": 98.0,
-      "owner_id": 8954270698,
-      "auto_start": false,
-      "_uid": "e6fc96cace13"
-    },
-    "1815701eadb5": {
-      "session_name": "aaravwinss",
-      "session_id": "74739548423%3AVz5ijTCGJMxnlM%3A6%3AAYmwmmNlkxRQoOWx0Jf5NNkiRiotqvwS8GcBkhtZtg",
-      "ua": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
-      "gc_name_text": "Mikey tmkc",
-      "msg_text": "Mikey yash TMR",
-      "thread_id": "1579141453392486",
-      "delay_min": 0.2,
-      "delay_max": 0.5,
-      "rename_min": 100.0,
-      "rename_max": 140.0,
-      "owner_id": 8954270698,
-      "auto_start": false,
-      "_uid": "1815701eadb5"
-    },
-    "efa21984bc95": {
-      "session_name": "aaravwinss",
-      "session_id": "74739548423%3AVz5ijTCGJMxnlM%3A6%3AAYmwmmNlkxRQoOWx0Jf5NNkiRiotqvwS8GcBkhtZtg",
-      "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
-      "gc_name_text": "Mikey pilee",
-      "msg_text": "YASH-MEMAX-AARYAV-AYAN-MIKEY-SCAR-SINISTER",
-      "thread_id": "2137199453833921",
-      "delay_min": 2.0,
-      "delay_max": 2.5,
-      "rename_min": 2.5,
-      "rename_max": 5.0,
-      "owner_id": 8954270698,
-      "auto_start": true,
-      "_uid": "efa21984bc95"
     },
     "9a03cff24329": {
       "session_name": "14769417269%3Aq1k7AAFRvc5jsh%3A10%3AAYmWaZ7UAhpO3Mt9pzAvNKyeTAzkcmuQyzwb-xl3BQ",
@@ -156,21 +95,6 @@
       "owner_id": 8043772198,
       "auto_start": true,
       "_uid": "3b312063c5e0"
-    },
-    "3bc03731fc4b": {
-      "session_name": "spmvelle",
-      "session_id": "32364516062%3AWSFcc4xUY7lysq%3A21%3AAYk-0FN1Sr0iPlRToGX0DGhtLgtdJYWXUslTmQsNvw",
-      "ua": "Mozilla/5.0 (Linux; Android 12; V2148A) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Mobile Safari/537.36",
-      "gc_name_text": "Dota baap",
-      "msg_text": "Sreay | light | ranveer |  prime tmkc",
-      "thread_id": "1394868069391532",
-      "delay_min": 0.3,
-      "delay_max": 0.3,
-      "rename_min": 100.0,
-      "rename_max": 100.0,
-      "owner_id": 8954270698,
-      "auto_start": true,
-      "_uid": "3bc03731fc4b"
     }
   }
 }
