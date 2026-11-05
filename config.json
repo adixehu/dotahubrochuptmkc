@@ -1,6 +1,5 @@
 {
   "users": [
-    6837248644,
     8043772198,
     8954270698,
     8772480152,
@@ -36,36 +35,6 @@
       "owner_id": 8043772198,
       "auto_start": true,
       "_uid": "49f9c87fa647"
-    },
-    "aaf48ad20f72": {
-      "session_name": "14769417269%3Aq1k7AAFRvc5jsh%3A10%3AAYmWaZ7UAhpO3Mt9pzAvNKyeTAzkcmuQyzwb-xl3BQ",
-      "session_id": "14769417269%3Aq1k7AAFRvc5jsh%3A10%3AAYmWaZ7UAhpO3Mt9pzAvNKyeTAzkcmuQyzwb-xl3BQ",
-      "ua": "Mozilla/5.0 (Linux; Android 13; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
-      "gc_name_text": "H8TER TMKC",
-      "msg_text": "H8TER",
-      "thread_id": "1874883357225306",
-      "delay_min": 0.3,
-      "delay_max": 0.3,
-      "rename_min": 13.0,
-      "rename_max": 15.0,
-      "owner_id": 6837248644,
-      "auto_start": false,
-      "_uid": "aaf48ad20f72"
-    },
-    "9a03cff24329": {
-      "session_name": "14769417269%3Aq1k7AAFRvc5jsh%3A10%3AAYmWaZ7UAhpO3Mt9pzAvNKyeTAzkcmuQyzwb-xl3BQ",
-      "session_id": "14769417269%3Aq1k7AAFRvc5jsh%3A10%3AAYmWaZ7UAhpO3Mt9pzAvNKyeTAzkcmuQyzwb-xl3BQ",
-      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3 Safari/605.1.15",
-      "gc_name_text": "\u1d29\u0280\u1d00\u1d1b\u026a\u1d0b-\ua731\u1d1c\u0280\u1d00\u1d0a-\ua731\u1d1c\u1d0a\u1d00\u029f-\u1d05\u0280\u1d07\u1d00\u1d0d-\u1d00\u0299\u029c\u026a \ud835\uddb2\u029f\u1d00\uaa9c\u025b\ua731",
-      "msg_text": "\u1d29\u0280\u1d00\u1d1b\u026a\u1d0b-\ua731\u1d1c\u0280\u1d00\u1d0a-\ua731\u1d1c\u1d0a\u1d00\u029f-\u1d05\u0280\u1d07\u1d00\u1d0d-\u1d00\u0299\u029c\u026a \ud835\uddb2\u029f\u1d00\uaa9c\u025b\ua731",
-      "thread_id": "947828947911715",
-      "delay_min": 0.2,
-      "delay_max": 0.3,
-      "rename_min": 25.0,
-      "rename_max": 50.0,
-      "owner_id": 6837248644,
-      "auto_start": false,
-      "_uid": "9a03cff24329"
     },
     "12eb47c4afd4": {
       "session_name": "smashingcomx1",
