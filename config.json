@@ -249,7 +249,7 @@
       "rename_min": 25.0,
       "rename_max": 50.0,
       "owner_id": 6837248644,
-      "auto_start": true,
+      "auto_start": false,
       "_uid": "9a03cff24329"
     }
   }
