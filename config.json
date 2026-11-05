@@ -96,6 +96,21 @@
       "owner_id": 8043772198,
       "auto_start": true,
       "_uid": "3b312063c5e0"
+    },
+    "c1cbd67c34a1": {
+      "session_name": "spmvella",
+      "session_id": "32364516062%3AWSFcc4xUY7lysq%3A21%3AAYk-0FN1Sr0iPlRToGX0DGhtLgtdJYWXUslTmQsNvw",
+      "ua": "Mozilla/5.0 (Linux; Android 13; CPH2451) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
+      "gc_name_text": "Sreay | light | ranveer |  prime",
+      "msg_text": "Sreay | light | ranveer |  prime TMR",
+      "thread_id": "1394868069391532",
+      "delay_min": 0.2,
+      "delay_max": 0.3,
+      "rename_min": 100.0,
+      "rename_max": 100.0,
+      "owner_id": 8954270698,
+      "auto_start": true,
+      "_uid": "c1cbd67c34a1"
     }
   }
 }
