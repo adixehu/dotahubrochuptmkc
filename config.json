@@ -111,6 +111,21 @@
       "owner_id": 8954270698,
       "auto_start": true,
       "_uid": "c1cbd67c34a1"
+    },
+    "0a33832d88a5": {
+      "session_name": "sunnybaapx4",
+      "session_id": "67748957811%3AHp2ilKcuaJ0e9g%3A8%3AAYnxvrmf7PD-2u2CE_oEUaVvLDru2GIFO6dBsVpweuE",
+      "ua": "Mozilla/5.0 (Linux; Android 13; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
+      "gc_name_text": "Mikey pilee",
+      "msg_text": "YASH/MIKEY KA BAAP SUNNY",
+      "thread_id": "2137199453833921",
+      "delay_min": 0.2,
+      "delay_max": 0.3,
+      "rename_min": 100.0,
+      "rename_max": 100.0,
+      "owner_id": 8954270698,
+      "auto_start": true,
+      "_uid": "0a33832d88a5"
     }
   }
 }
