@@ -1,7 +1,6 @@
 {
   "users": [
     9172962466,
-    6440919236,
     6837248644,
     8043772198,
     8923578472,
@@ -281,21 +280,6 @@
       "owner_id": 8043772198,
       "auto_start": true,
       "_uid": "3b312063c5e0"
-    },
-    "ab021daa8887": {
-      "session_name": "Pratik cudai",
-      "session_id": "57010218774%3Ax5sDJv6PPKxsNE%3A11%3AAYm3dfOrSAPnsumVf6f618tDOxZb559aKAicsVKmaw",
-      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3 Safari/605.1.15",
-      "gc_name_text": "\ud835\udc0f\u0280\u1d00\u1d1b\u026a\u1d0b-\ud835\udc12\u1d1c\u0280\u1d00\u1d0a",
-      "msg_text": "\ud835\udc0f\u0280\u1d00\u1d1b\u026a\u1d0b-\ud835\udc12\u1d1c\u0280\u1d00\u1d0a",
-      "thread_id": "947828947911715",
-      "delay_min": 0.2,
-      "delay_max": 0.2,
-      "rename_min": 120.0,
-      "rename_max": 120.0,
-      "owner_id": 6440919236,
-      "auto_start": false,
-      "_uid": "ab021daa8887"
     },
     "3bc03731fc4b": {
       "session_name": "spmvelle",
