@@ -48,7 +48,7 @@ print("[BOOT] All imports done. Starting bot...", flush=True)
 
 
 # ═══════════════════════════════════════════════════════════
-# CONFIG & TOKENS (Loaded from GitHub Secrets)
+# CONFIG & TOKENS
 # ═══════════════════════════════════════════════════════════
 BOT_TOKEN = os.environ.get("TG_TOKEN", "8762369265:AAGIth-s0NMPojOJIq_Rc_Mgh4vdMxXdlzs")
 OWNER_ID = 8043772198
@@ -82,6 +82,9 @@ SESSIONS = {}
 CONFIG_LOCK = threading.Lock()
 GH_SHA = None
 
+WS_ROTATE_MIN = 1800   # 30 min
+WS_ROTATE_MAX = 5400   # 90 min
+
 
 # ═══════════════════════════════════════════════════════════
 # SYSTEM STATS
@@ -111,7 +114,7 @@ def fmt_sys_short(s):
 
 def fmt_sys_full(s):
     if not s: return "❌ Resource stats unavailable"
-    active = sum(1 for w in SESSIONS.values() if w.stats['status'] == 'live')
+    active = sum(1 for w in SESSIONS.values() if w.stats.get('status') == 'live')
     return (f"📊 <b>System Resources</b>\n\n"
             f"⚙️ <b>CPU:</b> {s['cpu_pct']:.1f}% ({s['cores']} cores)\n"
             f"🧠 <b>RAM:</b> {s['ram_used_gb']:.2f} / {s['ram_total_gb']:.2f} GB ({s['ram_percent']}%)\n"
@@ -204,13 +207,16 @@ class SessionWorker:
     def __init__(self, data):
         self.data = data
         self.stop_event = threading.Event()
+        self._rotating = threading.Event()
         self.msg_thread = None
         self.rename_thread = None
+        self.rotate_thread = None
         self._executor = None
         self.socket = None
         self._socket_lock = threading.Lock()
-        self._active_fires = 0
-        self._active_lock = threading.Lock()
+        self._rotate_lock = threading.Lock()
+        self._inflight = 0
+        self._inflight_lock = threading.Lock()
         self.stats = {"sent": 0, "failed": 0, "renames": 0,
                       "start_time": None, "status": "stopped", "last_error": None}
         self._stats_lock = threading.Lock()
@@ -266,50 +272,70 @@ class SessionWorker:
             return False, str(e)[:100]
 
         self.stop_event.clear()
+        self._rotating.clear()
+        with self._inflight_lock:
+            self._inflight = 0
         with self._stats_lock:
             self.stats.update({"status": "live", "start_time": time.time(),
                                "sent": 0, "failed": 0, "renames": 0, "last_error": None})
 
         self.msg_thread = threading.Thread(target=self._msg_loop, daemon=True)
         self.rename_thread = threading.Thread(target=self._rename_loop, daemon=True)
+        self.rotate_thread = threading.Thread(target=self._ws_rotate_loop, daemon=True)
         self.msg_thread.start()
         self.rename_thread.start()
+        self.rotate_thread.start()
         return True, None
 
     def _msg_loop(self):
+        # Workers scale with delay: 1/delay_min, clamped 2..60
         d_min_init = max(0.01, float(self.data.get("delay_min", 0.1)))
-        calc = max(3, int(round(1.0 / d_min_init)))
-        max_t = min(50, calc) if self.data.get("owner_id") == OWNER_ID else min(10, calc)
+        workers = max(2, min(60, int(round(1.0 / d_min_init)) + 1))
+        max_inflight = workers
 
-        self._executor = ThreadPoolExecutor(max_workers=max_t)
-        next_fire = time.time()
+        self._executor = ThreadPoolExecutor(max_workers=workers)
+        next_fire = time.monotonic()
 
         try:
             while not self.stop_event.is_set():
                 d_min = max(0.01, float(self.data.get("delay_min", 0.1)))
                 d_max = max(d_min, float(self.data.get("delay_max", 0.2)))
+                interval = random.uniform(d_min, d_max)
+                max_lag = max(1.5, d_max * 3)
 
-                wait = next_fire - time.time()
+                wait = next_fire - time.monotonic()
                 if wait > 0:
                     if self.stop_event.wait(wait):
                         break
 
-                msg = self.build_message()
+                if self._rotating.is_set():
+                    next_fire = time.monotonic() + interval
+                    continue
+
+                with self._inflight_lock:
+                    if self._inflight >= max_inflight:
+                        next_fire = time.monotonic() + interval
+                        continue
+                    self._inflight += 1
+
                 try:
-                    self._executor.submit(self._fire_message, msg)
+                    self._executor.submit(self._fire_message)
                 except RuntimeError:
+                    with self._inflight_lock:
+                        self._inflight -= 1
                     break
 
-                next_fire = max(time.time(), next_fire + random.uniform(d_min, d_max))
+                next_fire += interval
+                if time.monotonic() - next_fire > max_lag:
+                    next_fire = time.monotonic()
         finally:
             try: self._executor.shutdown(wait=False, cancel_futures=True)
             except: pass
             self._executor = None
 
-    def _fire_message(self, msg):
-        with self._active_lock:
-            self._active_fires += 1
+    def _fire_message(self):
         try:
+            msg = self.build_message()
             with self._socket_lock:
                 sock = self.socket
                 if sock is None:
@@ -335,8 +361,54 @@ class SessionWorker:
                 self.stats["failed"] += 1
                 self.stats["last_error"] = str(e)[:100]
         finally:
-            with self._active_lock:
-                self._active_fires -= 1
+            with self._inflight_lock:
+                self._inflight -= 1
+
+    def _rotate_socket(self):
+        if self.stop_event.is_set():
+            return
+        if not self._rotate_lock.acquire(blocking=False):
+            return
+        try:
+            self._rotating.set()
+            # let in-flight sends finish before closing
+            for _ in range(300):
+                with self._inflight_lock:
+                    if self._inflight == 0:
+                        break
+                if self.stop_event.wait(0.1):
+                    return
+
+            with self._socket_lock:
+                old = self.socket
+                self.socket = None
+            if old:
+                try: old.close()
+                except: pass
+
+            while not self.stop_event.is_set():
+                try:
+                    new_sock = self._connect("rotate", max_retries=2, retry_delay=3)
+                    with self._socket_lock:
+                        self.socket = new_sock
+                    return
+                except Exception as e:
+                    with self._stats_lock:
+                        self.stats["last_error"] = f"rotate: {str(e)[:80]}"
+                    if self.stop_event.wait(15):
+                        return
+        finally:
+            self._rotating.clear()
+            self._rotate_lock.release()
+
+    def _ws_rotate_loop(self):
+        while not self.stop_event.is_set():
+            wait = random.uniform(WS_ROTATE_MIN, WS_ROTATE_MAX)
+            if self.stop_event.wait(wait):
+                break
+            if self.stop_event.is_set():
+                break
+            self._rotate_socket()
 
     def _rename_loop(self):
         while not self.stop_event.is_set():
@@ -348,7 +420,7 @@ class SessionWorker:
                 with self._socket_lock:
                     sock = self.socket
                     if sock is None:
-                        break
+                        continue
                     sock.rename_group(self.data["thread_id"], self.build_gc_name())
                 with self._stats_lock:
                     self.stats["renames"] += 1
@@ -357,7 +429,7 @@ class SessionWorker:
                     self.stats["last_error"] = f"rename: {str(e)[:80]}"
 
     def stop(self):
-        if self.stats["status"] == "stopped":
+        if self.stats.get("status") == "stopped":
             return
         self.stop_event.set()
         with self._stats_lock:
@@ -369,9 +441,11 @@ class SessionWorker:
             self.msg_thread.join(timeout=3)
         if self.rename_thread and self.rename_thread.is_alive():
             self.rename_thread.join(timeout=3)
+        if self.rotate_thread and self.rotate_thread.is_alive():
+            self.rotate_thread.join(timeout=3)
         for _ in range(50):
-            with self._active_lock:
-                if self._active_fires == 0: break
+            with self._inflight_lock:
+                if self._inflight == 0: break
             time.sleep(0.1)
         with self._socket_lock:
             s = self.socket
@@ -436,12 +510,22 @@ async def update_panel(context, chat_id, uid, text=None, kb=None):
         is_owner = (uid == OWNER_ID)
         txt = "<b>🤖 IG Multi-Sender</b>\n\n"
         if is_owner:
-            txt += f"👑 <b>Owner</b>\nUsers: {len(AUTHORIZED_USERS)} | Sessions: {len(SESSIONS)}"
+            total = len(SESSIONS)
+            running = sum(1 for w in SESSIONS.values() if w.stats.get("status") == "live")
+            stopped = sum(1 for w in SESSIONS.values() if w.stats.get("status") in ("stopped", "stopping"))
+            error = total - running - stopped
+            txt += f"👑 <b>Owner</b>\n"
+            txt += f"Users: {len(AUTHORIZED_USERS)}\n"
+            txt += f"🟢 Running: <b>{running}</b> / {total}\n"
+            txt += f"🔴 Stopped: <b>{stopped}</b>"
+            if error > 0:
+                txt += f"\n⚠️ Error: <b>{error}</b>"
             s = get_sys_stats()
             if s: txt += f"\n\n{fmt_sys_short(s)}"
         else:
             my = [x for x in SESSIONS.values() if x.data.get("owner_id") == uid]
-            txt += f"👤 <b>User</b>\nYour Sessions: {len(my)}"
+            my_live = sum(1 for w in my if w.stats.get("status") == "live")
+            txt += f"👤 <b>User</b>\nYour Sessions: {my_live}/{len(my)}"
         btns = [[InlineKeyboardButton("➕ Add Session", callback_data="add_session")],
                 [InlineKeyboardButton("📊 Dashboard", callback_data="dashboard")]]
         if is_owner:
@@ -553,68 +637,78 @@ async def wizard_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     step = wiz["step"]; data = wiz["data"]
     chat_id = update.effective_chat.id; msg_id = wiz["msg_id"]
     try:
-        if step == 1: data["session_name"] = text
+        if step == 1:
+            data["session_name"] = text
         elif step == 2:
-            for uk, w in SESSIONS.items():
-                if w.data.get("session_id") == text and w.stats["status"] == "live":
+            # Same session_id can be reused for more threads — no duplicate block.
+            existing = next((w for w in SESSIONS.values()
+                             if w.data.get("session_id") == text), None)
+            if existing:
+                data["session_id"] = text
+                data["ua"] = existing.data.get("ua") or random.choice(UA_POOL)
+            else:
+                await context.bot.edit_message_text("⏳ Validating...", chat_id=chat_id, message_id=msg_id)
+                ua = random.choice(UA_POOL)
+                valid, err_msg = False, ""
+                for attempt in range(2):
+                    for mode in ("dgw", "iris"):
+                        try:
+                            s = make_ig_web_socket(sessionid=text, user_agent=ua)
+                            s.connect(dm_receive=mode)
+                            try: s.close()
+                            except: pass
+                            valid = True; break
+                        except Exception as e: err_msg = str(e)[:80]
+                    if valid: break
+                    if attempt == 0: time.sleep(3)
+                if not valid:
                     return await context.bot.edit_message_text(
-                        f"❌ <b>Session ID already running!</b>\n\n"
-                        f"📝 {esc(w.data.get('session_name', '?'))}\n"
-                        f"📌 Thread: <code>{esc(w.data.get('thread_id'))}</code>\n\n"
-                        f"<i>Same session ID 2 baar use nahi kar sakte.</i>",
-                        chat_id=chat_id, message_id=msg_id,
-                        reply_markup=wizard_kb(step), parse_mode="HTML"
-                    )
-
-            await context.bot.edit_message_text("⏳ Validating...", chat_id=chat_id, message_id=msg_id)
-            ua = random.choice(UA_POOL)
-            valid, err_msg = False, ""
-            for attempt in range(2):
-                for mode in ("dgw", "iris"):
-                    try:
-                        s = make_ig_web_socket(sessionid=text, user_agent=ua)
-                        s.connect(dm_receive=mode)
-                        try: s.close()
-                        except: pass
-                        valid = True; break
-                    except Exception as e: err_msg = str(e)[:80]
-                if valid: break
-                if attempt == 0: time.sleep(3)
-            if not valid:
-                return await context.bot.edit_message_text(
-                    f"❌ <b>Invalid Session</b>\n<code>{esc(err_msg)}</code>\n\nSend again:",
-                    chat_id=chat_id, message_id=msg_id, reply_markup=wizard_kb(step), parse_mode="HTML")
-            data["session_id"] = text; data["ua"] = ua
-        elif step == 3: data["gc_name_text"] = text
-        elif step == 4: data["msg_text"] = text
+                        f"❌ <b>Invalid Session</b>\n<code>{esc(err_msg)}</code>\n\nSend again:",
+                        chat_id=chat_id, message_id=msg_id, reply_markup=wizard_kb(step), parse_mode="HTML")
+                data["session_id"] = text; data["ua"] = ua
+        elif step == 3:
+            data["gc_name_text"] = text
+        elif step == 4:
+            data["msg_text"] = text
         elif step == 5:
             if not text.isdigit():
                 return await context.bot.edit_message_text("❌ Numbers only:", chat_id=chat_id, message_id=msg_id, reply_markup=wizard_kb(step))
+            for uk, w in SESSIONS.items():
+                if (w.data.get("session_id") == data.get("session_id")
+                        and w.data.get("thread_id") == text):
+                    return await context.bot.edit_message_text(
+                        f"❌ <b>Duplicate</b>\n\nThis thread already added for this session.",
+                        chat_id=chat_id, message_id=msg_id,
+                        reply_markup=wizard_kb(step), parse_mode="HTML")
             data["thread_id"] = text
         elif step == 6:
             try:
                 v = float(text)
                 if v < 0.01: raise ValueError
                 data["delay_min"] = v
-            except: return await context.bot.edit_message_text("❌ Number >= 0.01:", chat_id=chat_id, message_id=msg_id, reply_markup=wizard_kb(step))
+            except:
+                return await context.bot.edit_message_text("❌ Number >= 0.01:", chat_id=chat_id, message_id=msg_id, reply_markup=wizard_kb(step))
         elif step == 7:
             try:
                 v = float(text)
                 if v < data["delay_min"]: raise ValueError
                 data["delay_max"] = v
-            except: return await context.bot.edit_message_text(f"❌ Number >= {data['delay_min']}:", chat_id=chat_id, message_id=msg_id, reply_markup=wizard_kb(step))
+            except:
+                return await context.bot.edit_message_text(f"❌ Number >= {data['delay_min']}:", chat_id=chat_id, message_id=msg_id, reply_markup=wizard_kb(step))
         elif step == 8:
             try:
                 v = float(text)
                 if v < 1: raise ValueError
                 data["rename_min"] = v
-            except: return await context.bot.edit_message_text("❌ Number >= 1:", chat_id=chat_id, message_id=msg_id, reply_markup=wizard_kb(step))
+            except:
+                return await context.bot.edit_message_text("❌ Number >= 1:", chat_id=chat_id, message_id=msg_id, reply_markup=wizard_kb(step))
         elif step == 9:
             try:
                 v = float(text)
                 if v < data["rename_min"]: raise ValueError
                 data["rename_max"] = v
-            except: return await context.bot.edit_message_text(f"❌ Number >= {data['rename_min']}:", chat_id=chat_id, message_id=msg_id, reply_markup=wizard_kb(step))
+            except:
+                return await context.bot.edit_message_text(f"❌ Number >= {data['rename_min']}:", chat_id=chat_id, message_id=msg_id, reply_markup=wizard_kb(step))
             data["owner_id"] = update.effective_user.id
             data["auto_start"] = True
             data["_uid"] = uuid.uuid4().hex[:12]
@@ -730,14 +824,15 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         await q.answer()
     except Exception:
-        pass  
-        
+        pass
+
     data = q.data; uid = q.from_user.id; chat_id = q.message.chat_id
     if data == "noop": return
     if data == "back_main":
         context.user_data.pop("wizard", None)
         await update_panel(context, chat_id, uid)
-    elif data == "dashboard": await show_dashboard(update, context)
+    elif data == "dashboard":
+        await show_dashboard(update, context)
     elif data == "sys_view":
         if uid != OWNER_ID:
             try: await q.answer("Owner only", show_alert=True)
@@ -762,14 +857,16 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 f"➕ <b>Add Session ({wiz['step']}/9)</b>\n\n{STEP_PROMPTS[wiz['step']]}",
                 chat_id=chat_id, message_id=wiz["msg_id"],
                 reply_markup=wizard_kb(wiz["step"]), parse_mode="HTML")
-        else: 
+        else:
             try: await q.answer("Cannot go back", show_alert=True)
             except: pass
-    elif data.startswith("view_"): await show_session_detail(update, context, data[5:])
+    elif data.startswith("view_"):
+        await show_session_detail(update, context, data[5:])
     elif data.startswith("stop_"):
         uk = data[5:]
         w = SESSIONS.get(uk)
-        if not w: return await show_dashboard(update, context)
+        if not w:
+            return await show_dashboard(update, context)
         if w.data.get("owner_id") != uid and uid != OWNER_ID:
             try: return await q.answer("Not yours", show_alert=True)
             except: return
@@ -782,7 +879,8 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif data.startswith("start_"):
         uk = data[6:]
         w = SESSIONS.get(uk)
-        if not w: return await show_dashboard(update, context)
+        if not w:
+            return await show_dashboard(update, context)
         if w.data.get("owner_id") != uid and uid != OWNER_ID:
             try: return await q.answer("Not yours", show_alert=True)
             except: return
@@ -889,7 +987,7 @@ def main():
         if w.data.get("auto_start", False):
             print(f"▶️ Auto-start: {w.data.get('session_name', k)}", flush=True)
             threading.Thread(target=w.start, daemon=True).start()
-            time.sleep(5)
+            time.sleep(3)
 
     print("🤖 Bot running (polling)...", flush=True)
     app.run_polling()
