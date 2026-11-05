@@ -128,7 +128,7 @@
       "rename_min": 13.0,
       "rename_max": 15.0,
       "owner_id": 6837248644,
-      "auto_start": false,
+      "auto_start": true,
       "_uid": "aaf48ad20f72"
     },
     "e6fc96cace13": {
