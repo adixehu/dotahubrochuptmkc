@@ -126,6 +126,21 @@
       "owner_id": 8954270698,
       "auto_start": true,
       "_uid": "0a33832d88a5"
+    },
+    "ed3339206b0f": {
+      "session_name": "sunnybaapx3",
+      "session_id": "60569529324%3AJDW7mC3l1v1qGL%3A16%3AAYmOfKpArFpirGfujOXskXLa1zVOibtAWCovS_FtXA",
+      "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1",
+      "gc_name_text": "Mikey pile",
+      "msg_text": "YASH/MIKEY KA BAAP SUNNY",
+      "thread_id": "2137199453833921",
+      "delay_min": 0.2,
+      "delay_max": 0.3,
+      "rename_min": 100.0,
+      "rename_max": 100.0,
+      "owner_id": 8954270698,
+      "auto_start": true,
+      "_uid": "ed3339206b0f"
     }
   }
 }
