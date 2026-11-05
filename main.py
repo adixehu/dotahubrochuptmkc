@@ -4,7 +4,7 @@
 import sys
 print("[BOOT] main.py is loading...", flush=True)
 
-import os, json, time, random, asyncio, threading, requests, subprocess
+import os, json, time, random, asyncio, threading, requests, subprocess, hashlib, inspect
 import html as html_lib
 import uuid
 import base64
@@ -44,6 +44,13 @@ except ImportError:
     _install("psutil")
     import psutil
 
+_MWS_PARAMS = set()
+try:
+    _MWS_PARAMS = set(inspect.signature(make_ig_web_socket).parameters.keys())
+    print(f"[device] make_ig_web_socket params: {sorted(_MWS_PARAMS)}", flush=True)
+except Exception as _e:
+    print(f"[device] inspect failed: {_e}", flush=True)
+
 print("[BOOT] All imports done. Starting bot...", flush=True)
 
 
@@ -82,8 +89,13 @@ SESSIONS = {}
 CONFIG_LOCK = threading.Lock()
 GH_SHA = None
 
-WS_ROTATE_MIN = 1800   # 30 min
-WS_ROTATE_MAX = 5400   # 90 min
+WS_ROTATE_MIN = 1800
+WS_ROTATE_MAX = 5400
+
+try:
+    SOCKET_POOL = max(1, min(10, int(os.environ.get("SOCKET_POOL", "2"))))
+except Exception:
+    SOCKET_POOL = 2
 
 
 # ═══════════════════════════════════════════════════════════
@@ -201,22 +213,24 @@ def gh_sync_loop():
 
 
 # ═══════════════════════════════════════════════════════════
-# SESSION WORKER — SINGLE SOCKET MODE
+# SESSION WORKER — 2-SOCKET POOL, SAME DEVICE
 # ═══════════════════════════════════════════════════════════
 class SessionWorker:
     def __init__(self, data):
         self.data = data
         self.stop_event = threading.Event()
-        self._rotating = threading.Event()
         self.msg_thread = None
         self.rename_thread = None
         self.rotate_thread = None
         self._executor = None
-        self.socket = None
-        self._socket_lock = threading.Lock()
-        self._rotate_lock = threading.Lock()
+        self.sockets = []
+        self.socket_locks = []
+        self.pool_size = SOCKET_POOL
+        self._rr_idx = 0
+        self._rr_lock = threading.Lock()
         self._inflight = 0
         self._inflight_lock = threading.Lock()
+        self._device_id = hashlib.md5(self.data["session_id"].encode()).hexdigest()
         self.stats = {"sent": 0, "failed": 0, "renames": 0,
                       "start_time": None, "status": "stopped", "last_error": None}
         self._stats_lock = threading.Lock()
@@ -231,20 +245,33 @@ class SessionWorker:
     def build_gc_name(self):
         return f"{self.data['gc_name_text']} !! {GC_EMOJI} !!"
 
-    def _connect(self, label, max_retries=3, retry_delay=5):
+    def _make_factory_kwargs(self):
+        base = {"sessionid": self.data["session_id"], "user_agent": self.data["ua"]}
+        if "device_id" in _MWS_PARAMS:
+            base["device_id"] = self._device_id
+        elif "device" in _MWS_PARAMS:
+            base["device"] = self._device_id
+        elif "device_dict" in _MWS_PARAMS:
+            base["device_dict"] = self._device_id
+        return base
+
+    def _connect(self, label, max_retries=3, retry_delay=2):
         err = None
+        base_kwargs = self._make_factory_kwargs()
         for attempt in range(max_retries):
             for mode in ("dgw", "iris"):
                 try:
-                    s = make_ig_web_socket(sessionid=self.data["session_id"],
-                                            user_agent=self.data["ua"])
+                    try:
+                        s = make_ig_web_socket(**base_kwargs)
+                    except TypeError:
+                        s = make_ig_web_socket(sessionid=self.data["session_id"],
+                                                user_agent=self.data["ua"])
                     s.connect(dm_receive=mode)
                     return s
                 except Exception as e:
                     err = e
-                    err_str = str(e).lower()
-                    if "connack" in err_str:
-                        print(f"[{self.data.get('session_name', '?')}] connack error on {mode} — waiting {retry_delay}s", flush=True)
+                    if "connack" in str(e).lower():
+                        print(f"[{self.data.get('session_name', '?')}] connack on {mode} ({label}) — wait {retry_delay}s", flush=True)
                         time.sleep(retry_delay)
                         continue
             if attempt < max_retries - 1:
@@ -252,32 +279,53 @@ class SessionWorker:
                 time.sleep(retry_delay)
         raise Exception(f"{label}: {err}")
 
+    def _seed_pool(self):
+        n = self.pool_size
+        self.sockets = [None] * n
+        self.socket_locks = [threading.Lock() for _ in range(n)]
+        ok = 0
+        last_err = None
+        for i in range(n):
+            try:
+                s = self._connect(f"pool{i}", max_retries=2, retry_delay=2)
+                with self.socket_locks[i]:
+                    self.sockets[i] = s
+                ok += 1
+                print(f"[{self.data.get('session_name', '?')}] socket {i+1}/{n} up | ua_len={len(self.data['ua'])} | dev={self._device_id[:12]}", flush=True)
+            except Exception as e:
+                last_err = str(e)[:100]
+                print(f"[{self.data.get('session_name', '?')}] socket {i+1}/{n} failed: {last_err}", flush=True)
+            if i < n - 1:
+                time.sleep(1.0)
+        if ok == 0:
+            raise Exception(last_err or "no sockets connected")
+        return ok
+
     def start(self):
         with self._stats_lock:
-            if self.stats["status"] in ("live", "starting"):
-                return False, "Already running"
+            if self.stats["status"] in ("live", "starting", "stopping"):
+                return False, "Already running/stopping"
 
-        with self._socket_lock:
-            if self.socket:
-                try: self.socket.close()
-                except: pass
-            self.socket = None
+        self.stop_event.clear()
+        self.sockets = []
+        self.socket_locks = []
+        self._rr_idx = 0
 
         try:
-            self.socket = self._connect("socket")
+            ok = self._seed_pool()
         except Exception as e:
             with self._stats_lock:
                 self.stats["status"] = "error"
                 self.stats["last_error"] = str(e)[:100]
             return False, str(e)[:100]
 
-        self.stop_event.clear()
-        self._rotating.clear()
         with self._inflight_lock:
             self._inflight = 0
+
         with self._stats_lock:
             self.stats.update({"status": "live", "start_time": time.time(),
-                               "sent": 0, "failed": 0, "renames": 0, "last_error": None})
+                               "sent": 0, "failed": 0, "renames": 0,
+                               "last_error": None if ok == self.pool_size else f"only {ok}/{self.pool_size} sockets"})
 
         self.msg_thread = threading.Thread(target=self._msg_loop, daemon=True)
         self.rename_thread = threading.Thread(target=self._rename_loop, daemon=True)
@@ -288,12 +336,7 @@ class SessionWorker:
         return True, None
 
     def _msg_loop(self):
-        # Workers scale with delay: 1/delay_min, clamped 2..60
-        d_min_init = max(0.01, float(self.data.get("delay_min", 0.1)))
-        workers = max(2, min(60, int(round(1.0 / d_min_init)) + 1))
-        max_inflight = workers
-
-        self._executor = ThreadPoolExecutor(max_workers=workers)
+        self._executor = ThreadPoolExecutor(max_workers=16)
         next_fire = time.monotonic()
 
         try:
@@ -301,114 +344,143 @@ class SessionWorker:
                 d_min = max(0.01, float(self.data.get("delay_min", 0.1)))
                 d_max = max(d_min, float(self.data.get("delay_max", 0.2)))
                 interval = random.uniform(d_min, d_max)
-                max_lag = max(1.5, d_max * 3)
 
-                wait = next_fire - time.monotonic()
+                live = sum(1 for s in self.sockets if s is not None)
+                max_inflight = max(2, live * 4) if live > 0 else 1
+
+                now = time.monotonic()
+                max_debt = max(1.5, interval * 20)
+                if next_fire < now - max_debt:
+                    next_fire = now
+
+                wait = next_fire - now
                 if wait > 0:
                     if self.stop_event.wait(wait):
                         break
 
-                if self._rotating.is_set():
-                    next_fire = time.monotonic() + interval
-                    continue
-
                 with self._inflight_lock:
                     if self._inflight >= max_inflight:
-                        next_fire = time.monotonic() + interval
+                        next_fire += interval
+                        sleep_t = min(0.05, interval)
+                        if self.stop_event.wait(sleep_t):
+                            break
                         continue
                     self._inflight += 1
 
                 try:
-                    self._executor.submit(self._fire_message)
+                    self._executor.submit(self._fire_message_rr)
                 except RuntimeError:
                     with self._inflight_lock:
                         self._inflight -= 1
                     break
 
                 next_fire += interval
-                if time.monotonic() - next_fire > max_lag:
-                    next_fire = time.monotonic()
         finally:
             try: self._executor.shutdown(wait=False, cancel_futures=True)
             except: pass
             self._executor = None
 
-    def _fire_message(self):
-        try:
-            msg = self.build_message()
-            with self._socket_lock:
-                sock = self.socket
-                if sock is None:
-                    return
-                res = sock.send_message(self.data["thread_id"], {"text": msg})
+    def _is_ok(self, res):
+        if isinstance(res, dict):
+            if res.get("ok") is True: return True
+            if "response" in res and isinstance(res["response"], dict):
+                d = res["response"].get("data", {})
+                if d and any("message_id" in str(v) for v in d.values()): return True
+        return False
 
-            is_ok = False
-            if isinstance(res, dict):
-                if res.get("ok") is True:
-                    is_ok = True
-                elif "response" in res and isinstance(res["response"], dict):
-                    data = res["response"].get("data", {})
-                    if data and any("message_id" in str(v) for v in data.values()):
-                        is_ok = True
-            with self._stats_lock:
-                if is_ok:
-                    self.stats["sent"] += 1
-                else:
+    def _fire_message_rr(self):
+        try:
+            with self._rr_lock:
+                n = len(self.sockets)
+                if n == 0:
+                    return
+                idx = self._rr_idx % n
+                self._rr_idx = (self._rr_idx + 1) % n
+
+            any_live = any(self.sockets[i] is not None for i in range(n))
+            if not any_live:
+                with self._stats_lock:
                     self.stats["failed"] += 1
-                    self.stats["last_error"] = str(res)[:100]
-        except Exception as e:
+                return
+
+            msg = self.build_message()
+
+            for offset in range(n):
+                i = (idx + offset) % n
+                try:
+                    with self.socket_locks[i]:
+                        sock = self.sockets[i]
+                        if sock is None:
+                            continue
+                        res = sock.send_message(self.data["thread_id"], {"text": msg})
+
+                    if self._is_ok(res):
+                        with self._stats_lock:
+                            self.stats["sent"] += 1
+                    else:
+                        with self._stats_lock:
+                            self.stats["failed"] += 1
+                            self.stats["last_error"] = str(res)[:100]
+                    return
+
+                except Exception as e:
+                    err_str = str(e).lower()
+                    with self._stats_lock:
+                        self.stats["last_error"] = f"send@{i}: {err_str[:80]}"
+                    if "timeout" in err_str or "timed out" in err_str:
+                        with self._stats_lock:
+                            self.stats["failed"] += 1
+                        return
+                    continue
+
             with self._stats_lock:
                 self.stats["failed"] += 1
-                self.stats["last_error"] = str(e)[:100]
         finally:
             with self._inflight_lock:
                 self._inflight -= 1
 
-    def _rotate_socket(self):
-        if self.stop_event.is_set():
-            return
-        if not self._rotate_lock.acquire(blocking=False):
-            return
-        try:
-            self._rotating.set()
-            # let in-flight sends finish before closing
-            for _ in range(300):
-                with self._inflight_lock:
-                    if self._inflight == 0:
-                        break
-                if self.stop_event.wait(0.1):
+    def _rotate_socket_at(self, idx):
+        with self.socket_locks[idx]:
+            old = self.sockets[idx]
+            self.sockets[idx] = None
+        if old:
+            try: old.close()
+            except: pass
+        backoff = 5
+        while not self.stop_event.is_set():
+            try:
+                new = self._connect(f"rot{idx}", max_retries=2, retry_delay=2)
+                with self.socket_locks[idx]:
+                    self.sockets[idx] = new
+                print(f"[{self.data.get('session_name', '?')}] rotated socket {idx+1}", flush=True)
+                return
+            except Exception as e:
+                with self._stats_lock:
+                    self.stats["last_error"] = f"rot{idx}: {str(e)[:80]}"
+                if self.stop_event.wait(backoff):
                     return
-
-            with self._socket_lock:
-                old = self.socket
-                self.socket = None
-            if old:
-                try: old.close()
-                except: pass
-
-            while not self.stop_event.is_set():
-                try:
-                    new_sock = self._connect("rotate", max_retries=2, retry_delay=3)
-                    with self._socket_lock:
-                        self.socket = new_sock
-                    return
-                except Exception as e:
-                    with self._stats_lock:
-                        self.stats["last_error"] = f"rotate: {str(e)[:80]}"
-                    if self.stop_event.wait(15):
-                        return
-        finally:
-            self._rotating.clear()
-            self._rotate_lock.release()
+                backoff = min(backoff * 2, 60)
 
     def _ws_rotate_loop(self):
+        n = len(self.sockets)
+        if n == 0:
+            return
+        base = time.monotonic() + random.uniform(WS_ROTATE_MIN, WS_ROTATE_MAX)
+        next_rotate = [
+            base + i * random.uniform(300, 900) + random.uniform(0, 120)
+            for i in range(n)
+        ]
+
         while not self.stop_event.is_set():
-            wait = random.uniform(WS_ROTATE_MIN, WS_ROTATE_MAX)
-            if self.stop_event.wait(wait):
+            now = time.monotonic()
+            for i in range(n):
+                if self.stop_event.is_set():
+                    break
+                if now >= next_rotate[i]:
+                    self._rotate_socket_at(i)
+                    next_rotate[i] = time.monotonic() + random.uniform(WS_ROTATE_MIN, WS_ROTATE_MAX)
+            if self.stop_event.wait(5):
                 break
-            if self.stop_event.is_set():
-                break
-            self._rotate_socket()
 
     def _rename_loop(self):
         while not self.stop_event.is_set():
@@ -416,9 +488,18 @@ class SessionWorker:
             r_max = max(r_min, float(self.data.get("rename_max", 15)))
             if self.stop_event.wait(random.uniform(r_min, r_max)):
                 break
+            if not self.sockets:
+                continue
+            idx = None
+            for i in range(len(self.sockets)):
+                if self.sockets[i] is not None:
+                    idx = i
+                    break
+            if idx is None:
+                continue
             try:
-                with self._socket_lock:
-                    sock = self.socket
+                with self.socket_locks[idx]:
+                    sock = self.sockets[idx]
                     if sock is None:
                         continue
                     sock.rename_group(self.data["thread_id"], self.build_gc_name())
@@ -447,12 +528,14 @@ class SessionWorker:
             with self._inflight_lock:
                 if self._inflight == 0: break
             time.sleep(0.1)
-        with self._socket_lock:
-            s = self.socket
-            self.socket = None
-        if s:
-            try: s.close()
-            except: pass
+        for i in range(len(self.sockets)):
+            s = self.sockets[i]
+            self.sockets[i] = None
+            if s:
+                try: s.close()
+                except: pass
+        self.sockets = []
+        self.socket_locks = []
         with self._stats_lock:
             self.stats["status"] = "stopped"
 
@@ -463,6 +546,8 @@ class SessionWorker:
             s["uptime"] = int(time.time() - s["start_time"])
         else:
             s["uptime"] = 0
+        s["sockets_live"] = sum(1 for x in self.sockets if x is not None) if self.sockets else 0
+        s["sockets_total"] = len(self.sockets)
         return s
 
 
@@ -564,7 +649,7 @@ async def cmd_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
         txt += f"{status_icon(s['status'])} <b>{esc(w.data.get('session_name', '?'))}</b>\n"
         txt += f"   Owner: <code>{w.data.get('owner_id')}</code>\n"
         txt += f"   Thread: <code>{esc(w.data.get('thread_id'))}</code>\n"
-        txt += f"   Sent: {s['sent']} | Fail: {s['failed']} | Up: {fmt_uptime(s['uptime'])}\n\n"
+        txt += f"   Sent: {s['sent']} | Fail: {s['failed']} | 🔌 {s.get('sockets_live', 0)}/{s.get('sockets_total', 0)}\n\n"
     await update.message.reply_text(txt, parse_mode="HTML")
 
 async def cmd_adduser(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -640,7 +725,6 @@ async def wizard_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if step == 1:
             data["session_name"] = text
         elif step == 2:
-            # Same session_id can be reused for more threads — no duplicate block.
             existing = next((w for w in SESSIONS.values()
                              if w.data.get("session_id") == text), None)
             if existing:
@@ -720,7 +804,7 @@ async def wizard_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
             context.user_data.pop("wizard", None)
             if ok:
                 await context.bot.edit_message_text(
-                    f"✅ <b>Session Added!</b>\n\n📝 {esc(data['session_name'])}\n📌 <code>{esc(data['thread_id'])}</code>\n⏱ Msg: {data['delay_min']}-{data['delay_max']}s\n✏️ Rename: {data['rename_min']}-{data['rename_max']}s",
+                    f"✅ <b>Session Added!</b>\n\n📝 {esc(data['session_name'])}\n📌 <code>{esc(data['thread_id'])}</code>\n🔌 Sockets: {w.pool_size} (same UA+device)\n⏱ Msg: {data['delay_min']}-{data['delay_max']}s\n✏️ Rename: {data['rename_min']}-{data['rename_max']}s",
                     chat_id=chat_id, message_id=msg_id, parse_mode="HTML")
             else:
                 err_low = err.lower()
@@ -731,7 +815,7 @@ async def wizard_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         "• Same IP se bahut zyada connections\n"
                         "• Kuch sessions stop karo pehle\n"
                         "• 5-10 min wait karke retry\n"
-                        "• Residential proxy use karo"
+                        "• <code>SOCKET_POOL=1</code> set karo"
                     )
                 elif "login" in err_low or "session" in err_low or "401" in err_low:
                     reason = (
@@ -773,7 +857,7 @@ async def show_dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for uk, w in my.items():
         s = w.get_stats()
         name = w.data.get("session_name", "Unnamed")
-        txt += f"{status_icon(s['status'])} <b>{esc(name)}</b> — {s['sent']} sent\n"
+        txt += f"{status_icon(s['status'])} <b>{esc(name)}</b> — {s['sent']} sent 🔌 {s.get('sockets_live', 0)}\n"
         btns.append([InlineKeyboardButton(f"📈 {name}", callback_data=f"view_{uk}")])
     btns.append([InlineKeyboardButton("⬅️ Back", callback_data="back_main")])
     await update_panel(context, chat_id, uid, txt, InlineKeyboardMarkup(btns))
@@ -791,6 +875,7 @@ async def show_session_detail(update: Update, context: ContextTypes.DEFAULT_TYPE
         f"📌 Thread: <code>{esc(d.get('thread_id'))}</code>\n"
         f"🌐 GC: {esc(d.get('gc_name_text', '?'))}\n"
         f"💬 Msg: {esc(d.get('msg_text', '?'))}\n\n"
+        f"🔌 <b>Sockets:</b> {s.get('sockets_live', 0)}/{s.get('sockets_total', 0)}\n"
         f"⏱ <b>Msg Delay:</b> {d.get('delay_min')}-{d.get('delay_max')}s\n"
         f"✏️ <b>Rename:</b> {d.get('rename_min')}-{d.get('rename_max')}s\n\n"
         f"📊 <b>Stats:</b>\n"
@@ -931,7 +1016,7 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             txt += f"{status_icon(s['status'])} <b>{esc(w.data.get('session_name', '?'))}</b>\n"
             txt += f"   Owner: <code>{w.data.get('owner_id')}</code>\n"
             txt += f"   Thread: <code>{esc(w.data.get('thread_id'))}</code>\n"
-            txt += f"   Sent: {s['sent']} | Fail: {s['failed']}\n\n"
+            txt += f"   Sent: {s['sent']} | Fail: {s['failed']} | 🔌 {s.get('sockets_live', 0)}/{s.get('sockets_total', 0)}\n\n"
         await update_panel(context, chat_id, uid, txt,
             InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data="back_main")]]))
     elif data == "manage_users":
@@ -989,7 +1074,7 @@ def main():
             threading.Thread(target=w.start, daemon=True).start()
             time.sleep(3)
 
-    print("🤖 Bot running (polling)...", flush=True)
+    print(f"🤖 Bot running (polling) | SOCKET_POOL={SOCKET_POOL}", flush=True)
     app.run_polling()
 
 
