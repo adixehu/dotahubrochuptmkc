@@ -236,6 +236,21 @@
       "owner_id": 8923578472,
       "auto_start": false,
       "_uid": "081b1c3b15ac"
+    },
+    "9a03cff24329": {
+      "session_name": "14769417269%3Aq1k7AAFRvc5jsh%3A10%3AAYmWaZ7UAhpO3Mt9pzAvNKyeTAzkcmuQyzwb-xl3BQ",
+      "session_id": "14769417269%3Aq1k7AAFRvc5jsh%3A10%3AAYmWaZ7UAhpO3Mt9pzAvNKyeTAzkcmuQyzwb-xl3BQ",
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3 Safari/605.1.15",
+      "gc_name_text": "\u1d29\u0280\u1d00\u1d1b\u026a\u1d0b-\ua731\u1d1c\u0280\u1d00\u1d0a-\ua731\u1d1c\u1d0a\u1d00\u029f-\u1d05\u0280\u1d07\u1d00\u1d0d-\u1d00\u0299\u029c\u026a \ud835\uddb2\u029f\u1d00\uaa9c\u025b\ua731",
+      "msg_text": "\u1d29\u0280\u1d00\u1d1b\u026a\u1d0b-\ua731\u1d1c\u0280\u1d00\u1d0a-\ua731\u1d1c\u1d0a\u1d00\u029f-\u1d05\u0280\u1d07\u1d00\u1d0d-\u1d00\u0299\u029c\u026a \ud835\uddb2\u029f\u1d00\uaa9c\u025b\ua731",
+      "thread_id": "947828947911715",
+      "delay_min": 0.2,
+      "delay_max": 0.3,
+      "rename_min": 25.0,
+      "rename_max": 50.0,
+      "owner_id": 6837248644,
+      "auto_start": true,
+      "_uid": "9a03cff24329"
     }
   }
 }
