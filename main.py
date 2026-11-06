@@ -87,15 +87,23 @@ UA_POOL = [
 AUTHORIZED_USERS = {OWNER_ID}
 SESSIONS = {}
 CONFIG_LOCK = threading.Lock()
+SESSIONS_LOCK = threading.Lock()      # protects SESSIONS
+AUTH_LOCK = threading.Lock()          # protects AUTHORIZED_USERS
 GH_SHA = None
 
 WS_ROTATE_MIN = 1800
 WS_ROTATE_MAX = 5400
 
+HEALTH_CHECK_MIN = 300   # 5 minutes
+HEALTH_CHECK_MAX = 600   # 10 minutes
+
 try:
     SOCKET_POOL = max(1, min(10, int(os.environ.get("SOCKET_POOL", "2"))))
 except Exception:
     SOCKET_POOL = 2
+
+# 🔧 FIX #5: explicit (connect, read) timeout tuple
+HTTP_TIMEOUT = (5, 10)
 
 
 # ═══════════════════════════════════════════════════════════
@@ -126,14 +134,16 @@ def fmt_sys_short(s):
 
 def fmt_sys_full(s):
     if not s: return "❌ Resource stats unavailable"
-    active = sum(1 for w in SESSIONS.values() if w.stats.get('status') == 'live')
+    with SESSIONS_LOCK:
+        active = sum(1 for w in SESSIONS.values() if w.stats.get('status') == 'live')
+        total = len(SESSIONS)
     return (f"📊 <b>System Resources</b>\n\n"
             f"⚙️ <b>CPU:</b> {s['cpu_pct']:.1f}% ({s['cores']} cores)\n"
             f"🧠 <b>RAM:</b> {s['ram_used_gb']:.2f} / {s['ram_total_gb']:.2f} GB ({s['ram_percent']}%)\n"
             f"💾 <b>Free RAM:</b> {s['ram_total_gb'] - s['ram_used_gb']:.2f} GB\n\n"
             f"🤖 <b>Bot Process:</b>\n"
             f"   RAM: {s['proc_ram_mb']} MB\n"
-            f"   Active Sessions: {active}/{len(SESSIONS)}")
+            f"   Active Sessions: {active}/{total}")
 
 def esc(s):
     return html_lib.escape(str(s) if s is not None else "")
@@ -148,7 +158,8 @@ def gh_fetch_config():
     url = f"https://api.github.com/repos/{GH_REPO}/contents/{GH_FILE}"
     headers = {"Authorization": f"token {GITHUB_PAT}"}
     try:
-        r = requests.get(url, headers=headers, timeout=10)
+        # 🔧 FIX #5: (connect, read) timeout
+        r = requests.get(url, headers=headers, timeout=HTTP_TIMEOUT)
         if r.status_code == 200:
             data = r.json()
             GH_SHA = data["sha"]
@@ -157,10 +168,12 @@ def gh_fetch_config():
                 cfg = json.loads(content)
             except Exception as parse_err:
                 print(f"❌ Config JSON parse failed: {parse_err}", flush=True)
+                GH_SHA = None
                 return {}
             if "users" in cfg:
-                AUTHORIZED_USERS = set(cfg["users"])
-                AUTHORIZED_USERS.add(OWNER_ID)
+                with AUTH_LOCK:
+                    AUTHORIZED_USERS = set(cfg["users"])
+                    AUTHORIZED_USERS.add(OWNER_ID)
             return cfg.get("sessions", {})
         elif r.status_code == 404:
             print("⚠️ No config file on GitHub, fresh start", flush=True)
@@ -172,39 +185,57 @@ def gh_fetch_config():
         print(f"⚠️ GH fetch: {e}", flush=True)
     return {}
 
-def gh_push_config(silent=True):
+def gh_push_config(silent=True, retry=0):
     global GH_SHA
     if not GITHUB_PAT: return
+    if retry > 3:
+        print("❌ GH push failed after 3 retries — giving up", flush=True)
+        return
+
+    # 🔧 strict lock hierarchy — CONFIG_LOCK → SESSIONS_LOCK → AUTH_LOCK
     with CONFIG_LOCK:
-        cfg = {"users": list(AUTHORIZED_USERS),
-               "sessions": {k: v.data for k, v in SESSIONS.items()}}
+        with SESSIONS_LOCK:
+            sessions_snapshot = {k: v.data for k, v in SESSIONS.items()}
+        with AUTH_LOCK:
+            users_snapshot = list(AUTHORIZED_USERS)
+        cfg = {"users": users_snapshot, "sessions": sessions_snapshot}
         content_b64 = base64.b64encode(json.dumps(cfg, indent=2).encode()).decode()
-        url = f"https://api.github.com/repos/{GH_REPO}/contents/{GH_FILE}"
-        headers = {"Authorization": f"token {GITHUB_PAT}"}
-        payload = {
-            "message": f"sync {datetime.now(IST).strftime('%H:%M:%S')}",
-            "content": content_b64,
-            "branch": GH_BRANCH,
-        }
-        if GH_SHA:
-            payload["sha"] = GH_SHA
-        try:
-            r = requests.put(url, headers=headers, json=payload, timeout=10)
-            if r.status_code in (200, 201):
+        sha_snapshot = GH_SHA
+
+    url = f"https://api.github.com/repos/{GH_REPO}/contents/{GH_FILE}"
+    headers = {"Authorization": f"token {GITHUB_PAT}"}
+    payload = {
+        "message": f"sync {datetime.now(IST).strftime('%H:%M:%S')}",
+        "content": content_b64,
+        "branch": GH_BRANCH,
+    }
+    if sha_snapshot:
+        payload["sha"] = sha_snapshot
+
+    try:
+        # 🔧 FIX #5: (connect, read) timeout
+        r = requests.put(url, headers=headers, json=payload, timeout=HTTP_TIMEOUT)
+        if r.status_code in (200, 201):
+            with CONFIG_LOCK:
                 GH_SHA = r.json()["content"]["sha"]
-                if not silent:
-                    print("✅ Config pushed to GitHub", flush=True)
-            elif r.status_code == 409:
-                print("⚠️ GH conflict, refetching...", flush=True)
-                gh_fetch_config()
-                gh_push_config(silent)
-            elif r.status_code == 401:
-                print("❌ GitHub auth failed — PAT invalid", flush=True)
-            else:
-                if not silent:
-                    print(f"⚠️ GH push status: {r.status_code}", flush=True)
-        except Exception as e:
-            print(f"❌ Push err: {e}", flush=True)
+            if not silent:
+                print("✅ Config pushed to GitHub", flush=True)
+        elif r.status_code == 409:
+            print("⚠️ GH conflict, refetching...", flush=True)
+            old_sha = GH_SHA
+            gh_fetch_config()
+            if GH_SHA == old_sha or GH_SHA is None:
+                print("❌ GH refetch did not update SHA — aborting retry", flush=True)
+                return
+            if retry < 3:
+                gh_push_config(silent, retry + 1)
+        elif r.status_code == 401:
+            print("❌ GitHub auth failed — PAT invalid", flush=True)
+        else:
+            if not silent:
+                print(f"⚠️ GH push status: {r.status_code}", flush=True)
+    except Exception as e:
+        print(f"❌ Push err: {e}", flush=True)
 
 def gh_sync_loop():
     while True:
@@ -222,6 +253,8 @@ class SessionWorker:
         self.msg_thread = None
         self.rename_thread = None
         self.rotate_thread = None
+        self.health_thread = None
+        self.listen_threads = []
         self._executor = None
         self.sockets = []
         self.socket_locks = []
@@ -230,9 +263,18 @@ class SessionWorker:
         self._rr_lock = threading.Lock()
         self._inflight = 0
         self._inflight_lock = threading.Lock()
-        self._device_id = hashlib.md5(self.data["session_id"].encode()).hexdigest()
+
+        # derive device_id from session_name (stable) not session_id
+        if "device_id" not in self.data:
+            seed = self.data.get("session_name", self.data["session_id"][:16])
+            self.data["device_id"] = hashlib.md5(seed.encode(), usedforsecurity=False).hexdigest()
+        self._device_id = self.data["device_id"]
+
         self.stats = {"sent": 0, "failed": 0, "renames": 0,
-                      "start_time": None, "status": "stopped", "last_error": None}
+                      "start_time": None, "status": "stopped",
+                      "last_error": None,
+                      "session_status": None,
+                      "session_error": None}
         self._stats_lock = threading.Lock()
 
     def build_message(self):
@@ -267,6 +309,11 @@ class SessionWorker:
                         s = make_ig_web_socket(sessionid=self.data["session_id"],
                                                 user_agent=self.data["ua"])
                     s.connect(dm_receive=mode)
+
+                    lt = threading.Thread(target=self._listen_loop, args=(s,), daemon=True)
+                    lt.start()
+                    self.listen_threads.append(lt)
+
                     return s
                 except Exception as e:
                     err = e
@@ -278,6 +325,12 @@ class SessionWorker:
                 print(f"[{self.data.get('session_name', '?')}] {label} retry {attempt+1}/{max_retries}: {str(err)[:80]}", flush=True)
                 time.sleep(retry_delay)
         raise Exception(f"{label}: {err}")
+
+    def _listen_loop(self, sock):
+        try:
+            sock.listen()
+        except Exception as e:
+            print(f"[{self.data.get('session_name', '?')}] listen error: {str(e)[:100]}", flush=True)
 
     def _seed_pool(self):
         n = self.pool_size
@@ -306,9 +359,26 @@ class SessionWorker:
             if self.stats["status"] in ("live", "starting", "stopping"):
                 return False, "Already running/stopping"
 
-        self.stop_event.clear()
-        self.sockets = []
-        self.socket_locks = []
+        # 🔧 FIX #1: ensure old threads are dead before restarting
+        for old_t in (self.msg_thread, self.rename_thread, self.rotate_thread, self.health_thread):
+            if old_t and old_t.is_alive():
+                old_t.join(timeout=5)
+                if old_t.is_alive():
+                    return False, "Previous threads still running. Try again in a few seconds."
+        for lt in list(self.listen_threads):
+            if lt.is_alive():
+                lt.join(timeout=5)
+                if lt.is_alive():
+                    return False, "Previous listener still running. Try again in a few seconds."
+
+        # 🔧 FIX #1: refuse start if any old tasks are still inflight
+        with self._inflight_lock:
+            if self._inflight > 0:
+                return False, f"{self._inflight} task(s) still running. Wait a moment."
+
+        # 🔧 FIX #1: fresh event per cycle (prevents reviving old threads)
+        self.stop_event = threading.Event()
+        self.listen_threads = []
         self._rr_idx = 0
 
         try:
@@ -325,14 +395,17 @@ class SessionWorker:
         with self._stats_lock:
             self.stats.update({"status": "live", "start_time": time.time(),
                                "sent": 0, "failed": 0, "renames": 0,
-                               "last_error": None if ok == self.pool_size else f"only {ok}/{self.pool_size} sockets"})
+                               "last_error": None if ok == self.pool_size else f"only {ok}/{self.pool_size} sockets",
+                               "session_status": None, "session_error": None})
 
         self.msg_thread = threading.Thread(target=self._msg_loop, daemon=True)
         self.rename_thread = threading.Thread(target=self._rename_loop, daemon=True)
         self.rotate_thread = threading.Thread(target=self._ws_rotate_loop, daemon=True)
+        self.health_thread = threading.Thread(target=self._health_check_loop, daemon=True)
         self.msg_thread.start()
         self.rename_thread.start()
         self.rotate_thread.start()
+        self.health_thread.start()
         return True, None
 
     def _msg_loop(self):
@@ -390,9 +463,13 @@ class SessionWorker:
 
     def _fire_message_rr(self):
         try:
+            if self.stop_event.is_set():
+                return
+
             with self._rr_lock:
                 n = len(self.sockets)
-                if n == 0:
+                # 🔧 FIX #2: guard against shrunk/mismatched lists from orphan cleanup
+                if n == 0 or len(self.socket_locks) < n:
                     return
                 idx = self._rr_idx % n
                 self._rr_idx = (self._rr_idx + 1) % n
@@ -444,7 +521,7 @@ class SessionWorker:
             old = self.sockets[idx]
             self.sockets[idx] = None
         if old:
-            try: old.close()
+            try: old.disconnect()
             except: pass
         backoff = 5
         while not self.stop_event.is_set():
@@ -482,6 +559,49 @@ class SessionWorker:
             if self.stop_event.wait(5):
                 break
 
+    def _health_check_loop(self):
+        while not self.stop_event.is_set():
+            wait = random.uniform(HEALTH_CHECK_MIN, HEALTH_CHECK_MAX)
+            if self.stop_event.wait(wait):
+                break
+
+            sock = None
+            for s in self.sockets:
+                if s is not None:
+                    sock = s
+                    break
+            if sock is None:
+                with self._stats_lock:
+                    self.stats["session_status"] = "error"
+                    self.stats["session_error"] = "no live socket"
+                continue
+
+            try:
+                health = sock.session_health()
+                web = health.get("web")
+                logged_out = health.get("logged_out", False)
+
+                with self._stats_lock:
+                    if logged_out:
+                        self.stats["session_status"] = "logged_out"
+                        self.stats["session_error"] = "logged_out=True"
+                    elif web == "walled":
+                        self.stats["session_status"] = "walled"
+                        self.stats["session_error"] = "web=walled"
+                    elif web == "ok":
+                        self.stats["session_status"] = "ok"
+                        self.stats["session_error"] = None
+                    else:
+                        self.stats["session_status"] = "error"
+                        self.stats["session_error"] = f"unknown health: {health}"
+
+                print(f"[{self.data.get('session_name', '?')}] health: {health}", flush=True)
+            except Exception as e:
+                with self._stats_lock:
+                    self.stats["session_status"] = "error"
+                    self.stats["session_error"] = str(e)[:100]
+                print(f"[{self.data.get('session_name', '?')}] health check error: {e}", flush=True)
+
     def _rename_loop(self):
         while not self.stop_event.is_set():
             r_min = max(1.0, float(self.data.get("rename_min", 5)))
@@ -515,27 +635,36 @@ class SessionWorker:
         self.stop_event.set()
         with self._stats_lock:
             self.stats["status"] = "stopping"
-        threading.Thread(target=self._cleanup, daemon=True).start()
+        self._cleanup()
 
     def _cleanup(self):
+        # 🔧 FIX #2: null out entries instead of shrinking lists
+        # (orphan worker tasks from shutdown(wait=False) may still index into these)
+        for i in range(len(self.sockets)):
+            s = self.sockets[i]
+            self.sockets[i] = None
+            if s:
+                try: s.disconnect()
+                except: pass
+
         if self.msg_thread and self.msg_thread.is_alive():
             self.msg_thread.join(timeout=3)
         if self.rename_thread and self.rename_thread.is_alive():
             self.rename_thread.join(timeout=3)
         if self.rotate_thread and self.rotate_thread.is_alive():
             self.rotate_thread.join(timeout=3)
+        if self.health_thread and self.health_thread.is_alive():
+            self.health_thread.join(timeout=3)
+        for lt in self.listen_threads:
+            if lt.is_alive():
+                lt.join(timeout=3)
+        self.listen_threads = []
+
         for _ in range(50):
             with self._inflight_lock:
                 if self._inflight == 0: break
             time.sleep(0.1)
-        for i in range(len(self.sockets)):
-            s = self.sockets[i]
-            self.sockets[i] = None
-            if s:
-                try: s.close()
-                except: pass
-        self.sockets = []
-        self.socket_locks = []
+
         with self._stats_lock:
             self.stats["status"] = "stopped"
 
@@ -551,7 +680,9 @@ class SessionWorker:
         return s
 
 
-def is_auth(uid): return uid in AUTHORIZED_USERS
+def is_auth(uid):
+    with AUTH_LOCK:
+        return uid in AUTHORIZED_USERS
 
 def fmt_uptime(sec):
     if sec < 60: return f"{sec}s"
@@ -560,6 +691,9 @@ def fmt_uptime(sec):
 
 def status_icon(s):
     return {"live": "🟢", "stopped": "🔴", "stopping": "🟡", "error": "⚠️"}.get(s, "⚪")
+
+def health_icon(status):
+    return {"ok": "✅", "walled": "⚠️", "logged_out": "❌", "error": "❌"}.get(status, "❔")
 
 
 # ═══════════════════════════════════════════════════════════
@@ -594,13 +728,16 @@ async def update_panel(context, chat_id, uid, text=None, kb=None):
     if text is None or kb is None:
         is_owner = (uid == OWNER_ID)
         txt = "<b>🤖 IG Multi-Sender</b>\n\n"
+        with SESSIONS_LOCK:
+            sessions_list = list(SESSIONS.values())
         if is_owner:
-            total = len(SESSIONS)
-            running = sum(1 for w in SESSIONS.values() if w.stats.get("status") == "live")
-            stopped = sum(1 for w in SESSIONS.values() if w.stats.get("status") in ("stopped", "stopping"))
+            total = len(sessions_list)
+            running = sum(1 for w in sessions_list if w.stats.get("status") == "live")
+            stopped = sum(1 for w in sessions_list if w.stats.get("status") in ("stopped", "stopping"))
             error = total - running - stopped
             txt += f"👑 <b>Owner</b>\n"
-            txt += f"Users: {len(AUTHORIZED_USERS)}\n"
+            with AUTH_LOCK:
+                txt += f"Users: {len(AUTHORIZED_USERS)}\n"
             txt += f"🟢 Running: <b>{running}</b> / {total}\n"
             txt += f"🔴 Stopped: <b>{stopped}</b>"
             if error > 0:
@@ -608,7 +745,7 @@ async def update_panel(context, chat_id, uid, text=None, kb=None):
             s = get_sys_stats()
             if s: txt += f"\n\n{fmt_sys_short(s)}"
         else:
-            my = [x for x in SESSIONS.values() if x.data.get("owner_id") == uid]
+            my = [x for x in sessions_list if x.data.get("owner_id") == uid]
             my_live = sum(1 for w in my if w.stats.get("status") == "live")
             txt += f"👤 <b>User</b>\nYour Sessions: {my_live}/{len(my)}"
         btns = [[InlineKeyboardButton("➕ Add Session", callback_data="add_session")],
@@ -642,9 +779,11 @@ async def cmd_sys(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def cmd_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID:
         return await update.message.reply_text("❌ Owner only")
-    if not SESSIONS: return await update.message.reply_text("No sessions.")
+    with SESSIONS_LOCK:
+        sessions_list = list(SESSIONS.items())
+    if not sessions_list: return await update.message.reply_text("No sessions.")
     txt = "<b>📋 All Sessions</b>\n\n"
-    for tid, w in SESSIONS.items():
+    for tid, w in sessions_list:
         s = w.get_stats()
         txt += f"{status_icon(s['status'])} <b>{esc(w.data.get('session_name', '?'))}</b>\n"
         txt += f"   Owner: <code>{w.data.get('owner_id')}</code>\n"
@@ -659,7 +798,8 @@ async def cmd_adduser(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await update.message.reply_text("Usage: /adduser 123456789")
     try:
         new_uid = int(context.args[0])
-        AUTHORIZED_USERS.add(new_uid)
+        with AUTH_LOCK:
+            AUTHORIZED_USERS.add(new_uid)
         await asyncio.to_thread(gh_push_config)
         await update.message.reply_text(f"✅ Authorized: <code>{new_uid}</code>", parse_mode="HTML")
     except:
@@ -674,10 +814,16 @@ async def cmd_deluser(update: Update, context: ContextTypes.DEFAULT_TYPE):
         del_uid = int(context.args[0])
         if del_uid == OWNER_ID:
             return await update.message.reply_text("Cannot remove owner")
-        AUTHORIZED_USERS.discard(del_uid)
-        for tid, w in list(SESSIONS.items()):
-            if w.data.get("owner_id") == del_uid:
-                w.stop(); del SESSIONS[tid]
+        # 🔧 FIX #3: strict lock hierarchy CONFIG → SESSIONS → AUTH
+        with CONFIG_LOCK:
+            with SESSIONS_LOCK:
+                to_remove = [(tid, w) for tid, w in SESSIONS.items() if w.data.get("owner_id") == del_uid]
+                for tid, _ in to_remove:
+                    SESSIONS.pop(tid, None)
+            with AUTH_LOCK:
+                AUTHORIZED_USERS.discard(del_uid)
+        for _, w in to_remove:
+            await asyncio.to_thread(w.stop)
         await asyncio.to_thread(gh_push_config)
         await update.message.reply_text(f"✅ Removed: <code>{del_uid}</code>", parse_mode="HTML")
     except:
@@ -725,11 +871,13 @@ async def wizard_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if step == 1:
             data["session_name"] = text
         elif step == 2:
-            existing = next((w for w in SESSIONS.values()
-                             if w.data.get("session_id") == text), None)
+            with SESSIONS_LOCK:
+                existing = next((w for w in SESSIONS.values()
+                                 if w.data.get("session_id") == text), None)
             if existing:
                 data["session_id"] = text
                 data["ua"] = existing.data.get("ua") or random.choice(UA_POOL)
+                data["device_id"] = existing.data.get("device_id", uuid.uuid4().hex)
             else:
                 await context.bot.edit_message_text("⏳ Validating...", chat_id=chat_id, message_id=msg_id)
                 ua = random.choice(UA_POOL)
@@ -739,7 +887,7 @@ async def wizard_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         try:
                             s = make_ig_web_socket(sessionid=text, user_agent=ua)
                             s.connect(dm_receive=mode)
-                            try: s.close()
+                            try: s.disconnect()
                             except: pass
                             valid = True; break
                         except Exception as e: err_msg = str(e)[:80]
@@ -750,6 +898,7 @@ async def wizard_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         f"❌ <b>Invalid Session</b>\n<code>{esc(err_msg)}</code>\n\nSend again:",
                         chat_id=chat_id, message_id=msg_id, reply_markup=wizard_kb(step), parse_mode="HTML")
                 data["session_id"] = text; data["ua"] = ua
+                data["device_id"] = uuid.uuid4().hex
         elif step == 3:
             data["gc_name_text"] = text
         elif step == 4:
@@ -757,13 +906,15 @@ async def wizard_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         elif step == 5:
             if not text.isdigit():
                 return await context.bot.edit_message_text("❌ Numbers only:", chat_id=chat_id, message_id=msg_id, reply_markup=wizard_kb(step))
-            for uk, w in SESSIONS.items():
-                if (w.data.get("session_id") == data.get("session_id")
-                        and w.data.get("thread_id") == text):
-                    return await context.bot.edit_message_text(
-                        f"❌ <b>Duplicate</b>\n\nThis thread already added for this session.",
-                        chat_id=chat_id, message_id=msg_id,
-                        reply_markup=wizard_kb(step), parse_mode="HTML")
+            with SESSIONS_LOCK:
+                duplicate = next((w for w in SESSIONS.values()
+                                  if (w.data.get("session_id") == data.get("session_id")
+                                      and w.data.get("thread_id") == text)), None)
+            if duplicate:
+                return await context.bot.edit_message_text(
+                    f"❌ <b>Duplicate</b>\n\nThis thread already added for this session.",
+                    chat_id=chat_id, message_id=msg_id,
+                    reply_markup=wizard_kb(step), parse_mode="HTML")
             data["thread_id"] = text
         elif step == 6:
             try:
@@ -794,12 +945,17 @@ async def wizard_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
             except:
                 return await context.bot.edit_message_text(f"❌ Number >= {data['rename_min']}:", chat_id=chat_id, message_id=msg_id, reply_markup=wizard_kb(step))
             data["owner_id"] = update.effective_user.id
-            data["auto_start"] = True
+            data["auto_start"] = False
             data["_uid"] = uuid.uuid4().hex[:12]
             w = SessionWorker(data)
-            SESSIONS[data["_uid"]] = w
+            # 🔧 FIX #3: wrap SESSIONS mutation in CONFIG → SESSIONS hierarchy
+            with CONFIG_LOCK:
+                with SESSIONS_LOCK:
+                    SESSIONS[data["_uid"]] = w
             await context.bot.edit_message_text(f"⏳ Starting <b>{esc(data['session_name'])}</b>...", chat_id=chat_id, message_id=msg_id, parse_mode="HTML")
             ok, err = await asyncio.to_thread(w.start)
+            if ok:
+                data["auto_start"] = True
             await asyncio.to_thread(gh_push_config)
             context.user_data.pop("wizard", None)
             if ok:
@@ -848,7 +1004,8 @@ async def wizard_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def show_dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
     chat_id = update.effective_chat.id
-    my = {k: v for k, v in SESSIONS.items() if v.data.get("owner_id") == uid}
+    with SESSIONS_LOCK:
+        my = {k: v for k, v in SESSIONS.items() if v.data.get("owner_id") == uid}
     if not my:
         return await update_panel(context, chat_id, uid, "📊 <b>Dashboard</b>\n\nNo sessions yet.",
             InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data="back_main")]]))
@@ -865,13 +1022,25 @@ async def show_dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def show_session_detail(update: Update, context: ContextTypes.DEFAULT_TYPE, uk: str):
     uid = update.effective_user.id
     chat_id = update.effective_chat.id
-    w = SESSIONS.get(uk)
+    with SESSIONS_LOCK:
+        w = SESSIONS.get(uk)
     if not w: return await show_dashboard(update, context)
     s = w.get_stats(); d = w.data
     icon = status_icon(s["status"])
+
+    hs = s.get("session_status")
+    he = s.get("session_error")
+    if hs:
+        health_line = f"🩺 <b>Session:</b> {health_icon(hs)} {hs.upper()}"
+        if he:
+            health_line += f" (<i>{esc(he[:60])}</i>)"
+    else:
+        health_line = "🩺 <b>Session:</b> ⏳ Not checked yet"
+
     txt = (
         f"📈 <b>{esc(d.get('session_name', '?'))}</b>\n\n"
         f"{icon} Status: <b>{s['status'].upper()}</b>\n"
+        f"{health_line}\n"
         f"📌 Thread: <code>{esc(d.get('thread_id'))}</code>\n"
         f"🌐 GC: {esc(d.get('gc_name_text', '?'))}\n"
         f"💬 Msg: {esc(d.get('msg_text', '?'))}\n\n"
@@ -896,6 +1065,7 @@ async def show_session_detail(update: Update, context: ContextTypes.DEFAULT_TYPE
                  InlineKeyboardButton("Msg +0.1", callback_data=f"adj_m_+0.1_{uk}")])
     btns.append([InlineKeyboardButton("Ren −1", callback_data=f"adj_r_-1_{uk}"),
                  InlineKeyboardButton("Ren +1", callback_data=f"adj_r_+1_{uk}")])
+    btns.append([InlineKeyboardButton("🗑 Delete", callback_data=f"delete_{uk}")])
     btns.append([InlineKeyboardButton("🔄 Refresh", callback_data=f"view_{uk}")])
     btns.append([InlineKeyboardButton("⬅️ Back", callback_data="dashboard")])
     await update_panel(context, chat_id, uid, txt, InlineKeyboardMarkup(btns))
@@ -906,38 +1076,50 @@ async def show_session_detail(update: Update, context: ContextTypes.DEFAULT_TYPE
 # ═══════════════════════════════════════════════════════════
 async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
-    try:
-        await q.answer()
-    except Exception:
-        pass
-
     data = q.data; uid = q.from_user.id; chat_id = q.message.chat_id
-    if data == "noop": return
+
+    if data == "noop":
+        try: await q.answer()
+        except: pass
+        return
+
     if data == "back_main":
+        try: await q.answer()
+        except: pass
         context.user_data.pop("wizard", None)
         await update_panel(context, chat_id, uid)
     elif data == "dashboard":
+        try: await q.answer()
+        except: pass
         await show_dashboard(update, context)
     elif data == "sys_view":
         if uid != OWNER_ID:
             try: await q.answer("Owner only", show_alert=True)
             except: pass
             return
+        try: await q.answer()
+        except: pass
         s = get_sys_stats()
         await update_panel(context, chat_id, uid, fmt_sys_full(s),
             InlineKeyboardMarkup([[InlineKeyboardButton("🔄 Refresh", callback_data="sys_view")],
                                   [InlineKeyboardButton("⬅️ Back", callback_data="back_main")]]))
     elif data == "add_session":
+        try: await q.answer()
+        except: pass
         context.user_data["wizard"] = {"step": 1, "data": {}, "msg_id": q.message.message_id}
         await safe_edit_or_send(context.bot, chat_id, q.message.message_id,
             f"➕ <b>Add Session (1/9)</b>\n\n{STEP_PROMPTS[1]}", wizard_kb(1))
     elif data == "cancel_wizard":
+        try: await q.answer()
+        except: pass
         context.user_data.pop("wizard", None)
         await update_panel(context, chat_id, uid, "❌ Cancelled.")
     elif data == "wiz_back":
         wiz = context.user_data.get("wizard")
         if wiz and wiz["step"] > 1:
             wiz["step"] -= 1
+            try: await q.answer()
+            except: pass
             await context.bot.edit_message_text(
                 f"➕ <b>Add Session ({wiz['step']}/9)</b>\n\n{STEP_PROMPTS[wiz['step']]}",
                 chat_id=chat_id, message_id=wiz["msg_id"],
@@ -946,29 +1128,40 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             try: await q.answer("Cannot go back", show_alert=True)
             except: pass
     elif data.startswith("view_"):
+        try: await q.answer()
+        except: pass
         await show_session_detail(update, context, data[5:])
     elif data.startswith("stop_"):
         uk = data[5:]
-        w = SESSIONS.get(uk)
+        with SESSIONS_LOCK:
+            w = SESSIONS.get(uk)
         if not w:
+            try: await q.answer("Session not found", show_alert=True)
+            except: pass
             return await show_dashboard(update, context)
         if w.data.get("owner_id") != uid and uid != OWNER_ID:
-            try: return await q.answer("Not yours", show_alert=True)
-            except: return
-        w.stop(); w.data["auto_start"] = False
-        await asyncio.to_thread(gh_push_config)
+            try: await q.answer("Not yours", show_alert=True)
+            except: pass
+            return
         try: await q.answer("🛑 Stopping...")
         except: pass
-        await asyncio.sleep(1)
+        await asyncio.to_thread(w.stop)
+        w.data["auto_start"] = False
+        await asyncio.to_thread(gh_push_config)
+        await asyncio.sleep(0.5)
         await show_session_detail(update, context, uk)
     elif data.startswith("start_"):
         uk = data[6:]
-        w = SESSIONS.get(uk)
+        with SESSIONS_LOCK:
+            w = SESSIONS.get(uk)
         if not w:
+            try: await q.answer("Session not found", show_alert=True)
+            except: pass
             return await show_dashboard(update, context)
         if w.data.get("owner_id") != uid and uid != OWNER_ID:
-            try: return await q.answer("Not yours", show_alert=True)
-            except: return
+            try: await q.answer("Not yours", show_alert=True)
+            except: pass
+            return
         try: await q.answer("▶️ Starting...")
         except: pass
         ok, err = await asyncio.to_thread(w.start)
@@ -984,13 +1177,18 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if len(parts) >= 4:
             param = parts[1]
             try: delta = float(parts[2])
-            except: return
+            except:
+                try: await q.answer("Invalid", show_alert=True)
+                except: pass
+                return
             uk = "_".join(parts[3:])
-            w = SESSIONS.get(uk)
+            with SESSIONS_LOCK:
+                w = SESSIONS.get(uk)
             if not w: return
             if w.data.get("owner_id") != uid and uid != OWNER_ID:
-                try: return await q.answer("Not yours", show_alert=True)
-                except: return
+                try: await q.answer("Not yours", show_alert=True)
+                except: pass
+                return
             if param == "m":
                 nm = max(0.01, float(w.data.get("delay_min", 0.1)) + delta)
                 nx = max(nm, float(w.data.get("delay_max", 0.2)) + delta)
@@ -1005,13 +1203,18 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await show_session_detail(update, context, uk)
     elif data == "list_all":
         if uid != OWNER_ID:
-            try: return await q.answer("Owner only", show_alert=True)
-            except: return
-        if not SESSIONS:
+            try: await q.answer("Owner only", show_alert=True)
+            except: pass
+            return
+        try: await q.answer()
+        except: pass
+        with SESSIONS_LOCK:
+            sessions_list = list(SESSIONS.items())
+        if not sessions_list:
             return await update_panel(context, chat_id, uid, "No sessions.",
                 InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data="back_main")]]))
         txt = "📋 <b>All Sessions</b>\n\n"
-        for tid, w in SESSIONS.items():
+        for tid, w in sessions_list:
             s = w.get_stats()
             txt += f"{status_icon(s['status'])} <b>{esc(w.data.get('session_name', '?'))}</b>\n"
             txt += f"   Owner: <code>{w.data.get('owner_id')}</code>\n"
@@ -1021,13 +1224,88 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data="back_main")]]))
     elif data == "manage_users":
         if uid != OWNER_ID:
-            try: return await q.answer("Owner only", show_alert=True)
-            except: return
+            try: await q.answer("Owner only", show_alert=True)
+            except: pass
+            return
+        try: await q.answer()
+        except: pass
+        with AUTH_LOCK:
+            users_list = list(AUTHORIZED_USERS)
         txt = "👥 <b>Authorized Users</b>\n\n"
-        for u in AUTHORIZED_USERS: txt += f"• <code>{u}</code>\n"
+        for u in users_list: txt += f"• <code>{u}</code>\n"
         txt += "\n/adduser 123456789\n/deluser 123456789"
         await update_panel(context, chat_id, uid, txt,
             InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data="back_main")]]))
+
+    elif data.startswith("delete_yes_"):
+        uk = data[11:]
+        with SESSIONS_LOCK:
+            w = SESSIONS.get(uk)
+        if not w:
+            try: await q.answer("Session not found", show_alert=True)
+            except: pass
+            return await show_dashboard(update, context)
+        if w.data.get("owner_id") != uid and uid != OWNER_ID:
+            try: await q.answer("Not yours", show_alert=True)
+            except: pass
+            return
+        try: await q.answer()
+        except: pass
+        # 🔧 FIX #4: retry stop, refuse pop if still running
+        await asyncio.to_thread(w.stop)
+        if w.stats.get("status") != "stopped":
+            await asyncio.sleep(2)
+            await asyncio.to_thread(w.stop)
+        if w.stats.get("status") != "stopped":
+            try:
+                await context.bot.send_message(
+                    chat_id,
+                    "⚠️ <b>Session didn't stop cleanly.</b>\nTry again in a few seconds.",
+                    parse_mode="HTML")
+            except: pass
+            return await show_session_detail(update, context, uk)
+        # 🔧 FIX #3: lock hierarchy CONFIG → SESSIONS
+        with CONFIG_LOCK:
+            with SESSIONS_LOCK:
+                SESSIONS.pop(uk, None)
+        await asyncio.to_thread(gh_push_config)
+        await update_panel(context, chat_id, uid, "🗑 Session deleted.",
+            InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data="back_main")]]))
+
+    elif data.startswith("delete_no_"):
+        uk = data[10:]
+        try: await q.answer("Cancelled")
+        except: pass
+        await show_session_detail(update, context, uk)
+
+    elif data.startswith("delete_"):
+        uk = data[7:]
+        with SESSIONS_LOCK:
+            w = SESSIONS.get(uk)
+        if not w:
+            try: await q.answer("Session not found", show_alert=True)
+            except: pass
+            return await show_dashboard(update, context)
+        if w.data.get("owner_id") != uid and uid != OWNER_ID:
+            try: await q.answer("Not yours", show_alert=True)
+            except: pass
+            return
+        try: await q.answer()
+        except: pass
+        txt = (f"⚠️ <b>Delete Session?</b>\n\n"
+               f"📝 <b>{esc(w.data.get('session_name', '?'))}</b>\n"
+               f"📌 <code>{esc(w.data.get('thread_id', '?'))}</code>\n\n"
+               f"This will stop the session and remove it from GitHub config.\n\n"
+               f"Are you sure?")
+        kb = InlineKeyboardMarkup([
+            [InlineKeyboardButton("✅ Yes, delete", callback_data=f"delete_yes_{uk}"),
+             InlineKeyboardButton("❌ No, cancel", callback_data=f"delete_no_{uk}")],
+        ])
+        await safe_edit_or_send(context.bot, chat_id, q.message.message_id, txt, kb)
+
+    else:
+        try: await q.answer()
+        except: pass
 
 
 async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1045,10 +1323,14 @@ def main():
     saved = gh_fetch_config()
     print(f"✅ Got {len(saved)} sessions from config", flush=True)
 
-    for k, sdata in saved.items():
-        if "_uid" not in sdata:
-            sdata["_uid"] = uuid.uuid4().hex[:12]
-        SESSIONS[sdata["_uid"]] = SessionWorker(sdata)
+    with SESSIONS_LOCK:
+        for k, sdata in saved.items():
+            if "_uid" not in sdata:
+                sdata["_uid"] = uuid.uuid4().hex[:12]
+            if "device_id" not in sdata:
+                seed = sdata.get("session_name", sdata["session_id"][:16])
+                sdata["device_id"] = hashlib.md5(seed.encode(), usedforsecurity=False).hexdigest()
+            SESSIONS[sdata["_uid"]] = SessionWorker(sdata)
 
     try:
         psutil.cpu_percent(interval=0.1)
@@ -1068,11 +1350,12 @@ def main():
 
     threading.Thread(target=gh_sync_loop, daemon=True).start()
 
-    for k, w in SESSIONS.items():
-        if w.data.get("auto_start", False):
-            print(f"▶️ Auto-start: {w.data.get('session_name', k)}", flush=True)
-            threading.Thread(target=w.start, daemon=True).start()
-            time.sleep(3)
+    with SESSIONS_LOCK:
+        sessions_to_start = [(k, w) for k, w in SESSIONS.items() if w.data.get("auto_start", False)]
+    for k, w in sessions_to_start:
+        print(f"▶️ Auto-start: {w.data.get('session_name', k)}", flush=True)
+        threading.Thread(target=w.start, daemon=True).start()
+        time.sleep(3)
 
     print(f"🤖 Bot running (polling) | SOCKET_POOL={SOCKET_POOL}", flush=True)
     app.run_polling()
