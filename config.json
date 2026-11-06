@@ -135,6 +135,22 @@
       "auto_start": true,
       "_uid": "8d9e883af391",
       "device_id": "90a5288c808f6dabe7293ec88475012b"
+    },
+    "201f57f8be62": {
+      "session_name": "OKAY",
+      "session_id": "57010218774%3Alhcbgmnvb0eGdy%3A13%3AAYmSMSPjo5abUAxv02oA4UXCJylEB2rZie1tLQgIvQ",
+      "ua": "Mozilla/5.0 (Linux; Android 12; V2148A) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Mobile Safari/537.36",
+      "device_id": "fdd78d969258484ba44b0ab5a6832c4a",
+      "gc_name_text": "\u1d29\u0280\u1d00\u1d1b\u026a\u1d0b \ua730\u1d1c\u1d04\u1d0b\u1d07\u1d05 \u0299\u028f - [\u1d00\u0274\u1d0b\u026a\u1d1b]",
+      "msg_text": "\u1d29\u0280\u1d00\u1d1b\u026a\u1d0b \ua730\u1d1c\u1d04\u1d0b\u1d07\u1d05 \u0299\u028f - [\u1d00\u0274\u1d0b\u026a\u1d1b]",
+      "thread_id": "1672621094487686",
+      "delay_min": 0.2,
+      "delay_max": 0.2,
+      "rename_min": 100.0,
+      "rename_max": 100.0,
+      "owner_id": 6440919236,
+      "auto_start": true,
+      "_uid": "201f57f8be62"
     }
   }
 }
