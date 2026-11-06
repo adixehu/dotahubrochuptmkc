@@ -84,7 +84,7 @@
       "rename_min": 100.0,
       "rename_max": 100.0,
       "owner_id": 8954270698,
-      "auto_start": true,
+      "auto_start": false,
       "_uid": "0a33832d88a5",
       "device_id": "d4f1c1cf43b078ab3a386f13a86c731c"
     },
