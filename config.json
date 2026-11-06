@@ -20,7 +20,8 @@
       "rename_max": 191.0,
       "owner_id": 8043772198,
       "auto_start": false,
-      "_uid": "1290b0d49e4f"
+      "_uid": "1290b0d49e4f",
+      "device_id": "098f6bcd4621d373cade4e832627b4f6"
     },
     "49f9c87fa647": {
       "session_name": "defendingwindx1",
@@ -35,7 +36,8 @@
       "rename_max": 120.0,
       "owner_id": 8043772198,
       "auto_start": false,
-      "_uid": "49f9c87fa647"
+      "_uid": "49f9c87fa647",
+      "device_id": "78dba8b392cc94b412fef2055f6cf834"
     },
     "12eb47c4afd4": {
       "session_name": "smashingcomx1",
@@ -50,7 +52,8 @@
       "rename_max": 200.0,
       "owner_id": 8043772198,
       "auto_start": true,
-      "_uid": "12eb47c4afd4"
+      "_uid": "12eb47c4afd4",
+      "device_id": "f05ca2450912c0f3665f15e427272cf1"
     },
     "3b312063c5e0": {
       "session_name": "crackingcomx1",
@@ -65,7 +68,8 @@
       "rename_max": 200.0,
       "owner_id": 8043772198,
       "auto_start": true,
-      "_uid": "3b312063c5e0"
+      "_uid": "3b312063c5e0",
+      "device_id": "60728b207b76967ed9f62b4533722803"
     },
     "c1cbd67c34a1": {
       "session_name": "spmvella",
@@ -80,7 +84,8 @@
       "rename_max": 100.0,
       "owner_id": 8954270698,
       "auto_start": false,
-      "_uid": "c1cbd67c34a1"
+      "_uid": "c1cbd67c34a1",
+      "device_id": "c095ca2baca7686d0e7a86c1a7433748"
     },
     "0a33832d88a5": {
       "session_name": "sunnybaapx4",
@@ -95,7 +100,8 @@
       "rename_max": 100.0,
       "owner_id": 8954270698,
       "auto_start": true,
-      "_uid": "0a33832d88a5"
+      "_uid": "0a33832d88a5",
+      "device_id": "d4f1c1cf43b078ab3a386f13a86c731c"
     },
     "ed3339206b0f": {
       "session_name": "sunnybaapx3",
@@ -110,7 +116,8 @@
       "rename_max": 100.0,
       "owner_id": 8954270698,
       "auto_start": true,
-      "_uid": "ed3339206b0f"
+      "_uid": "ed3339206b0f",
+      "device_id": "105b9d0782c223dee88eaf560fcaadc4"
     },
     "92a435d180e2": {
       "session_name": "spmvella",
@@ -125,7 +132,8 @@
       "rename_max": 150.0,
       "owner_id": 8954270698,
       "auto_start": true,
-      "_uid": "92a435d180e2"
+      "_uid": "92a435d180e2",
+      "device_id": "c095ca2baca7686d0e7a86c1a7433748"
     },
     "8d9e883af391": {
       "session_name": "Defendingwindx1 ( rerun )",
@@ -140,7 +148,8 @@
       "rename_max": 200.0,
       "owner_id": 8043772198,
       "auto_start": true,
-      "_uid": "8d9e883af391"
+      "_uid": "8d9e883af391",
+      "device_id": "90a5288c808f6dabe7293ec88475012b"
     }
   }
 }
