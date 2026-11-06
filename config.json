@@ -135,6 +135,22 @@
       "auto_start": true,
       "_uid": "8d9e883af391",
       "device_id": "90a5288c808f6dabe7293ec88475012b"
+    },
+    "c7abcc6f1076": {
+      "session_name": "PRATIK SERVICE",
+      "session_id": "57010218774%3Alhcbgmnvb0eGdy%3A13%3AAYmSMSPjo5abUAxv02oA4UXCJylEB2rZie1tLQgIvQ",
+      "ua": "Mozilla/5.0 (Linux; Android 13; CPH2451) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
+      "device_id": "a8fbbf551f414d28b2e1888327fa9a51",
+      "gc_name_text": "PRATIK-SURAJ TMKC",
+      "msg_text": "PRATIK-SURAJ TMKC",
+      "thread_id": "1672621094487686",
+      "delay_min": 0.2,
+      "delay_max": 0.5,
+      "rename_min": 100.0,
+      "rename_max": 120.0,
+      "owner_id": 6440919236,
+      "auto_start": true,
+      "_uid": "c7abcc6f1076"
     }
   }
 }
