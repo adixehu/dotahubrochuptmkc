@@ -151,22 +151,6 @@
       "owner_id": 6440919236,
       "auto_start": true,
       "_uid": "0ad8bc5d1192"
-    },
-    "1ca60db00ad9": {
-      "session_name": "SURAJ PITAI",
-      "session_id": "45965717223%3AgXrSqJbzQtJE8W%3A5%3AAYlOcfDlFmSi_jQy6rdO-a_woR7u3QZQYkmWxAt0ZA",
-      "ua": "Mozilla/5.0 (Linux; Android 12; V2148A) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Mobile Safari/537.36",
-      "device_id": "0bbc6638fd9b409384fbb1bce3cd1503",
-      "gc_name_text": "\ua731\u1d1c\u0280\u1d00\u1d0a \ua730\u1d1c\u1d04\u1d0b\u1d07\u1d05 \u0299\u028f - [\u1d00\u0274\u1d0b\u026a\u1d1b]",
-      "msg_text": "\ua731\u1d1c\u0280\u1d00\u1d0a \u1d1b\u1d0d\u1d0b\u1d04",
-      "thread_id": "947828947911715",
-      "delay_min": 0.2,
-      "delay_max": 0.4,
-      "rename_min": 100.0,
-      "rename_max": 110.0,
-      "owner_id": 6440919236,
-      "auto_start": true,
-      "_uid": "1ca60db00ad9"
     }
   }
 }
