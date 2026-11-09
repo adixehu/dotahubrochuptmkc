@@ -184,6 +184,22 @@
       "owner_id": 8043772198,
       "auto_start": false,
       "_uid": "0a6bcf3c5eb3"
+    },
+    "6588387ffad3": {
+      "session_name": "Nc",
+      "session_id": "74700732853%3AuWYgKvgohl4FDF%3A5%3AAYl2VEuR-6h-Ngx1_yeXM74p1gqSToZhLSfX3ameqQ",
+      "ua": "Mozilla/5.0 (Linux; Android 13; CPH2451) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
+      "device_id": "93e202971a9347eab0c60cc787b7c0a4",
+      "gc_name_text": "Hatwr tmkc",
+      "msg_text": "Hy",
+      "thread_id": "1115143024635148",
+      "delay_min": 10.0,
+      "delay_max": 20.0,
+      "rename_min": 1.0,
+      "rename_max": 1.0,
+      "owner_id": 8043772198,
+      "auto_start": false,
+      "_uid": "6588387ffad3"
     }
   }
 }
