@@ -151,22 +151,6 @@
       "owner_id": 6440919236,
       "auto_start": true,
       "_uid": "0ad8bc5d1192"
-    },
-    "27281fc13ad0": {
-      "session_name": "DREAM PITAI",
-      "session_id": "15000629692%3A9HGpJsS58sZEWw%3A3%3AAYm13Aygua_I8Y_cBv2vH45ibBderdzxF-sU-ax6Ag",
-      "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
-      "device_id": "ba6e659869cd420ba346605bf1bad6a1",
-      "gc_name_text": "D\u0280\u1d07\u1d00\u1d0d \ud835\udc0b\u1d1c\u0274 \u1d29\u1d07 \ud835\udc02\u029c\u1d00\u1d05",
-      "msg_text": "\u1d05\u0280\u1d07\u1d00\u1d0d \u1d1b\u1d0d\u1d0b\u1d04",
-      "thread_id": "947828947911715",
-      "delay_min": 0.1,
-      "delay_max": 0.2,
-      "rename_min": 100.0,
-      "rename_max": 110.0,
-      "owner_id": 6440919236,
-      "auto_start": false,
-      "_uid": "27281fc13ad0"
     }
   }
 }
