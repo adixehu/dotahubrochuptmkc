@@ -168,6 +168,22 @@
       "owner_id": 6440919236,
       "auto_start": true,
       "_uid": "50875d931e4f"
+    },
+    "0a6bcf3c5eb3": {
+      "session_name": "Test",
+      "session_id": "74242372744%3AicqhiwNI0bXE6h%3A14%3AAYnXC0by-o8hYZUIqNAA2SLw_4uN5uHjTU8m_iIpHg",
+      "ua": "Mozilla/5.0 (Linux; Android 13; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
+      "device_id": "fb71efd2d7e44860bd4f4989d27e5e1b",
+      "gc_name_text": "Hatwr",
+      "msg_text": "Hatwr",
+      "thread_id": "1594907375294880",
+      "delay_min": 0.1,
+      "delay_max": 0.1,
+      "rename_min": 200.0,
+      "rename_max": 300.0,
+      "owner_id": 8043772198,
+      "auto_start": true,
+      "_uid": "0a6bcf3c5eb3"
     }
   }
 }
