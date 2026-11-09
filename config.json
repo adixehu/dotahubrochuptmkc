@@ -200,22 +200,6 @@
       "owner_id": 6440919236,
       "auto_start": true,
       "_uid": "67e0db3aa2f3"
-    },
-    "4ac7ff30500d": {
-      "session_name": "SURAJ PITAI BY HIMU",
-      "session_id": "17743042393%3AiRvxbPKTX9EVUs%3A18%3AAYkrJ8zldeSc9YT1R_CGf2Hshe6qpiByYh06zvnNUA",
-      "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
-      "device_id": "6e324bd05fd6431a8b52b60fc7a50629",
-      "gc_name_text": "PRATIK CHOTEY TERI MAA RNDY Q HAI",
-      "msg_text": "\u1d29\u0280\u1d00\u1d1b\u026a\u1d0b \u1d1b\u1d0d\u1d0b\u1d04",
-      "thread_id": "947828947911715",
-      "delay_min": 0.1,
-      "delay_max": 0.2,
-      "rename_min": 100.0,
-      "rename_max": 110.0,
-      "owner_id": 6440919236,
-      "auto_start": false,
-      "_uid": "4ac7ff30500d"
     }
   }
 }
