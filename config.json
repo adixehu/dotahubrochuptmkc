@@ -151,6 +151,22 @@
       "owner_id": 6440919236,
       "auto_start": true,
       "_uid": "0ad8bc5d1192"
+    },
+    "2f2cd2afd24b": {
+      "session_name": "SURAJ PITAI",
+      "session_id": "15000629692%3Anbfi1JZzHVT58i%3A11%3AAYmG42k1pj-AaGIOUSo47kpTKS6PmO31MGUGO4DZOg",
+      "ua": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
+      "device_id": "bbf9f767399c492b95140529fa246aea",
+      "gc_name_text": "SURAJ DIHADI PE JA RNDYK LDCE \ud83d\ude39",
+      "msg_text": "\u1d29\u0280\u1d00\u1d1b\u026a\u1d0b \u1d1b\u1d0d\u1d0b\u1d04",
+      "thread_id": "947828947911715",
+      "delay_min": 0.1,
+      "delay_max": 0.2,
+      "rename_min": 110.0,
+      "rename_max": 110.0,
+      "owner_id": 6440919236,
+      "auto_start": true,
+      "_uid": "2f2cd2afd24b"
     }
   }
 }
