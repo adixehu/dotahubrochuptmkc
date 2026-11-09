@@ -168,6 +168,22 @@
       "owner_id": 6440919236,
       "auto_start": true,
       "_uid": "2f2cd2afd24b"
+    },
+    "50875d931e4f": {
+      "session_name": "DREAM PITAI BY RIS",
+      "session_id": "22721503218%3A9JCBfjq9JyiEWq%3A19%3AAYltV7zyiCD3K7KRWL_i59nDXunlE82F3CsdSxv5BQ",
+      "ua": "Mozilla/5.0 (Linux; Android 13; CPH2451) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
+      "device_id": "ffbf2f0772c64948983c6472cc03ae50",
+      "gc_name_text": "DREAM LANGDE KI MA COD DALEGE RIS VAI",
+      "msg_text": "\u1d29\u0280\u1d00\u1d1b\u026a\u1d0b \u1d1b\u1d0d\u1d0b\u1d04",
+      "thread_id": "947828947911715",
+      "delay_min": 0.1,
+      "delay_max": 0.2,
+      "rename_min": 100.0,
+      "rename_max": 110.0,
+      "owner_id": 6440919236,
+      "auto_start": true,
+      "_uid": "50875d931e4f"
     }
   }
 }
