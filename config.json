@@ -248,6 +248,22 @@
       "owner_id": 6440919236,
       "auto_start": true,
       "_uid": "d5b5b0186e10"
+    },
+    "7646c8a3de85": {
+      "session_name": "Py.god305",
+      "session_id": "64112462641%3AtXvPGCxj2THwbC%3A18%3AAYkq5gaiMF8F56uRUsqY7_wxQkjJka5492wtX8s2Qg",
+      "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1",
+      "device_id": "0e6ebf067aa2432a9f430330f53353eb",
+      "gc_name_text": "ANKIT GOD",
+      "msg_text": "\u1d29\u0280\u1d00\u1d1b\u026a\u1d0b-\ua731\u1d1c\u0280\u1d00\u1d0a-\u1d00\u0299\u029c\u026a-\ua731\u1d1c\u1d0a\u1d00\u029f-\u1d05\u0280\u1d07\u1d00\u1d0d-\ua730\u1d00\u1d0d\u1d07 \u1d05\u1d0f\u1d21\u0274\u1d07\u0280-\ua731\u026a\u0274\ua731\u1d1b\u1d07\u0280",
+      "thread_id": "947828947911715",
+      "delay_min": 0.1,
+      "delay_max": 0.2,
+      "rename_min": 100.0,
+      "rename_max": 110.0,
+      "owner_id": 6440919236,
+      "auto_start": false,
+      "_uid": "7646c8a3de85"
     }
   }
 }
