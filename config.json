@@ -200,6 +200,22 @@
       "owner_id": 8043772198,
       "auto_start": true,
       "_uid": "a9957338809b"
+    },
+    "3b7fab62cf96": {
+      "session_name": "Spam test",
+      "session_id": "74700732853%3AuWYgKvgohl4FDF%3A5%3AAYl2VEuR-6h-Ngx1_yeXM74p1gqSToZhLSfX3ameqQ",
+      "ua": "Mozilla/5.0 (Linux; Android 12; V2148A) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Mobile Safari/537.36",
+      "device_id": "29c29af46c3441279516a9ebe8261ac4",
+      "gc_name_text": "Testhu",
+      "msg_text": "Test",
+      "thread_id": "1115143024635148",
+      "delay_min": 1.0,
+      "delay_max": 1.0,
+      "rename_min": 1.0,
+      "rename_max": 1.0,
+      "owner_id": 8043772198,
+      "auto_start": true,
+      "_uid": "3b7fab62cf96"
     }
   }
 }
