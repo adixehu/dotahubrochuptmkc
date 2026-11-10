@@ -232,6 +232,22 @@
       "owner_id": 6440919236,
       "auto_start": true,
       "_uid": "9922b9a3039c"
+    },
+    "d5b5b0186e10": {
+      "session_name": "DREAM PITAI BY BAN",
+      "session_id": "14719931533%3AslpSOJLQQpRxhk%3A25%3AAYmBTDSh7HkvXq5pSwUtFvjxc4c1XWHc8D54HTlxGg",
+      "ua": "Mozilla/5.0 (Linux; Android 12; V2148A) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Mobile Safari/537.36",
+      "device_id": "e972dde9cf484d689bfcc72c9e3ea74e",
+      "gc_name_text": "DREAM KALU MISTRY KE LDCE IDR AAO",
+      "msg_text": "\u1d05\u0280\u1d07\u1d00\u1d0d \u1d1b\u1d0d\u1d0b\u1d04",
+      "thread_id": "947828947911715",
+      "delay_min": 0.1,
+      "delay_max": 0.2,
+      "rename_min": 100.0,
+      "rename_max": 110.0,
+      "owner_id": 6440919236,
+      "auto_start": true,
+      "_uid": "d5b5b0186e10"
     }
   }
 }
