@@ -184,6 +184,22 @@
       "owner_id": 8043772198,
       "auto_start": false,
       "_uid": "0a6bcf3c5eb3"
+    },
+    "a9957338809b": {
+      "session_name": "Ankit banned id",
+      "session_id": "23017249503%3Aas7Vxl8msGwXxJ%3A17%3AAYlYPwhL32oTzg80vmuC6Db01F2cJaS8veU3Paahug",
+      "ua": "Mozilla/5.0 (Linux; Android 12; V2148A) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Mobile Safari/537.36",
+      "device_id": "a2a1a5566ec64a6cb8518a3539bf773c",
+      "gc_name_text": "Suraj Dream Tmkc",
+      "msg_text": "Suraj Dream Tmkc",
+      "thread_id": "947828947911715",
+      "delay_min": 0.1,
+      "delay_max": 0.1,
+      "rename_min": 100.0,
+      "rename_max": 100.0,
+      "owner_id": 8043772198,
+      "auto_start": true,
+      "_uid": "a9957338809b"
     }
   }
 }
