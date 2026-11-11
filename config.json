@@ -11,22 +11,6 @@
     7528333754
   ],
   "sessions": {
-    "1290b0d49e4f": {
-      "session_name": "test",
-      "session_id": "66579839277%3A2woB2PGtYVFK07%3A4%3AAYmlX7O17OeIux4HaMnQ3BSaFecjzYmQrStKbKe9aQ",
-      "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
-      "gc_name_text": "Hater Tmkc",
-      "msg_text": "Hater Tmkc",
-      "thread_id": "1115143024635148",
-      "delay_min": 0.2,
-      "delay_max": 0.25,
-      "rename_min": 91.0,
-      "rename_max": 191.0,
-      "owner_id": 8043772198,
-      "auto_start": false,
-      "_uid": "1290b0d49e4f",
-      "device_id": "098f6bcd4621d373cade4e832627b4f6"
-    },
     "12eb47c4afd4": {
       "session_name": "smashingcomx1",
       "session_id": "64944235626%3ApuK7d6AGgUcuij%3A15%3AAYnkqefm8ZGTx3OZ8msUwaKHWOsEKx_Cs-xo8LqVxg",
