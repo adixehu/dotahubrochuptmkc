@@ -232,7 +232,7 @@
       "rename_min": 50.0,
       "rename_max": 150.0,
       "owner_id": 7528333754,
-      "auto_start": true,
+      "auto_start": false,
       "_uid": "938f58a1d5f7"
     },
     "a3e84ed978c4": {
