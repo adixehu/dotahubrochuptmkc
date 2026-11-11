@@ -330,6 +330,22 @@
       "owner_id": 8547639145,
       "auto_start": true,
       "_uid": "ba8d7cacb172"
+    },
+    "938f58a1d5f7": {
+      "session_name": "Romeo and sahil",
+      "session_id": "68092256925%3A90dfSOUZ3ATlA9%3A25%3AAYk9urRGBvQ7rRJbM9LxxAuZVEU2GDxgTmtwutrFuw",
+      "ua": "Mozilla/5.0 (Linux; Android 13; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
+      "device_id": "8cf991a09b3b4e6db05c428e9f57502b",
+      "gc_name_text": "Romeo and sahil Say dota baap hmari ma mat chodo",
+      "msg_text": "Romeo and sahil Tmkc",
+      "thread_id": "1428650175606753",
+      "delay_min": 0.05,
+      "delay_max": 0.1,
+      "rename_min": 50.0,
+      "rename_max": 150.0,
+      "owner_id": 7528333754,
+      "auto_start": true,
+      "_uid": "938f58a1d5f7"
     }
   }
 }
