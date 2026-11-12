@@ -250,22 +250,6 @@
       "owner_id": 8547639145,
       "auto_start": false,
       "_uid": "adbf7ba5e059"
-    },
-    "cb84c9c8e036": {
-      "session_name": "Vaggukeng",
-      "session_id": "66890753688%3A8tMDhD3Jk6GML5%3A11%3AAYmsSTVS9XC2UVjTqWHkZJaaZI2cxEOaQ15zH0vlHA",
-      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3 Safari/605.1.15",
-      "device_id": "e427a79b4fdd4d5a8487c52e23bf23b9",
-      "gc_name_text": "Sinister \ud835\ude48\ud835\ude3c\ud835\ude3c \ud835\ude4d\ud835\ude3c\ud835\ude49\ud835\ude3f\ud835\ude44 \ud835\ude4f\ud835\ude40\ud835\ude4d\ud835\ude44\ud83d\udd25",
-      "msg_text": "2318561228684319",
-      "thread_id": "2318561228684319",
-      "delay_min": 0.3,
-      "delay_max": 0.4,
-      "rename_min": 3.0,
-      "rename_max": 16.0,
-      "owner_id": 8009309969,
-      "auto_start": false,
-      "_uid": "cb84c9c8e036"
     }
   }
 }
