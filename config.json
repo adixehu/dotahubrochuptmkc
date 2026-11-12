@@ -1,7 +1,7 @@
 {
   "users": [
-    6440919236,
     6837248644,
+    6440919236,
     8043772198,
     8560786890,
     8954270698,
@@ -250,22 +250,6 @@
       "owner_id": 8547639145,
       "auto_start": false,
       "_uid": "adbf7ba5e059"
-    },
-    "3f6bd3fe7036": {
-      "session_name": "Vaggukeng",
-      "session_id": "66890753688%3A8tMDhD3Jk6GML5%3A11%3AAYmsSTVS9XC2UVjTqWHkZJaaZI2cxEOaQ15zH0vlHA",
-      "ua": "Mozilla/5.0 (Linux; Android 13; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
-      "device_id": "080c2313f00c4e59b2f57769dcd26e61",
-      "gc_name_text": "SINISTER \ud835\ude48\ud835\ude3c\ud835\ude3c \ud835\ude4d\ud835\ude3c\ud835\ude49\ud835\ude3f\ud835\ude44 \ud835\ude4f\ud835\ude40\ud835\ude4d\ud835\ude44",
-      "msg_text": "sinister \ud835\ude48\ud835\ude3c\ud835\ude3f\ud835\ude3c\ud835\ude3c\ud835\ude4d\ud835\ude3e\ud835\ude43\ud835\ude3f",
-      "thread_id": "2318561228684319",
-      "delay_min": 0.1,
-      "delay_max": 0.2,
-      "rename_min": 2.0,
-      "rename_max": 15.0,
-      "owner_id": 8009309969,
-      "auto_start": true,
-      "_uid": "3f6bd3fe7036"
     }
   }
 }
