@@ -250,6 +250,22 @@
       "owner_id": 8547639145,
       "auto_start": false,
       "_uid": "adbf7ba5e059"
+    },
+    "7b951745ca11": {
+      "session_name": "1",
+      "session_id": "35348655869%3AeqZL6SXET40y1q%3A29%3AAYkMeBa7U8RRHv44ptIQSCmrp5fimmVsmpvsWLWXVg",
+      "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+      "device_id": "7d34bfb0f1884df49af1250270445310",
+      "gc_name_text": "ZIA UTH",
+      "msg_text": "@zi__onda_sa",
+      "thread_id": "1854707229305355",
+      "delay_min": 356.0,
+      "delay_max": 500.0,
+      "rename_min": 162.0,
+      "rename_max": 180.0,
+      "owner_id": 7849604910,
+      "auto_start": true,
+      "_uid": "7b951745ca11"
     }
   }
 }
