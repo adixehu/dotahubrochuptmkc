@@ -250,6 +250,22 @@
       "owner_id": 8547639145,
       "auto_start": false,
       "_uid": "adbf7ba5e059"
+    },
+    "e3c55fe5e604": {
+      "session_name": "Munnachod",
+      "session_id": "66890753688%3A8tMDhD3Jk6GML5%3A11%3AAYmsSTVS9XC2UVjTqWHkZJaaZI2cxEOaQ15zH0vlHA",
+      "ua": "Mozilla/5.0 (Linux; Android 13; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
+      "device_id": "1cf540ebc18e425287b0b0b9bc655d97",
+      "gc_name_text": "\u1d0d\u1d1c\u0274\u0274\u1d00 \ud835\ude34\uaab6\u00e0\uaa9c\uaac0",
+      "msg_text": "\u1d0d\u1d1c\u0274\u0274\u1d00 \ud835\ude48\ud835\ude3c\ud835\ude3c \ud835\ude4d\ud835\ude3c\ud835\ude49\ud835\ude3f\ud835\ude44 \ud835\ude4f\ud835\ude40\ud835\ude4d\ud835\ude44",
+      "thread_id": "2582679389230445",
+      "delay_min": 0.1,
+      "delay_max": 0.2,
+      "rename_min": 2.0,
+      "rename_max": 10.0,
+      "owner_id": 8009309969,
+      "auto_start": true,
+      "_uid": "e3c55fe5e604"
     }
   }
 }
