@@ -203,22 +203,6 @@
       "auto_start": false,
       "_uid": "938f58a1d5f7"
     },
-    "79eec6fe5ce1": {
-      "session_name": "Test",
-      "session_id": "9102749179%3A6LvmzsKuVm8lYm%3A8%3AAYkULcc89ybykVhoh6XAdYswtbB0fqQ5Ikhw8TTauF0",
-      "ua": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1",
-      "device_id": "f6e5b82f6f8b451fac94f7b84cab0ca5",
-      "gc_name_text": "Hy",
-      "msg_text": "Hy",
-      "thread_id": "1468455605245590",
-      "delay_min": 1.0,
-      "delay_max": 5.0,
-      "rename_min": 100.0,
-      "rename_max": 200.0,
-      "owner_id": 8043772198,
-      "auto_start": false,
-      "_uid": "79eec6fe5ce1"
-    },
     "adbf7ba5e059": {
       "session_name": "RAKSHIT PILLA 2",
       "session_id": "71872523328%3AAreAGaTqUScBta%3A21%3AAYmOhy5v8p8AV_bwpNsTW9gvqIX2IgVvvtOYXMVlBe8",
