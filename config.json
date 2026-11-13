@@ -280,7 +280,7 @@
       "rename_min": 10.0,
       "rename_max": 15.0,
       "owner_id": 8547639145,
-      "auto_start": true,
+      "auto_start": false,
       "_uid": "34e0759bac86"
     },
     "db9b3e252750": {
