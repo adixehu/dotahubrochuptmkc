@@ -266,6 +266,22 @@
       "owner_id": 8009309969,
       "auto_start": true,
       "_uid": "e3c55fe5e604"
+    },
+    "5be9ba584439": {
+      "session_name": "Yash ban id",
+      "session_id": "60569529324%3A8cq0zehAa0GKcP%3A26%3AAYni5VY0_5dLdWynkMo8OB4iv64pQt5XaKIE2jMSSQ",
+      "ua": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
+      "device_id": "416145db339844b88ec3afd10f53c054",
+      "gc_name_text": "Yqsh Tmkc",
+      "msg_text": "Yash Tmkc",
+      "thread_id": "2137199453833921",
+      "delay_min": 0.01,
+      "delay_max": 0.01,
+      "rename_min": 100.0,
+      "rename_max": 200.0,
+      "owner_id": 8043772198,
+      "auto_start": true,
+      "_uid": "5be9ba584439"
     }
   }
 }
