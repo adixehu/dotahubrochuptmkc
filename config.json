@@ -250,22 +250,6 @@
       "owner_id": 8043772198,
       "auto_start": true,
       "_uid": "5be9ba584439"
-    },
-    "3934ece77660": {
-      "session_name": "Yash ban id 2",
-      "session_id": "17602743008%3A1kUzEaB6rN15ES%3A26%3AAYn1JMEi3nNj0Ple1HcM5Za7Mgkk0RYcFGaPjqpBJA",
-      "ua": "Mozilla/5.0 (Linux; Android 12; V2148A) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Mobile Safari/537.36",
-      "device_id": "f2d6f5395fbd4067af06f5f317eb867f",
-      "gc_name_text": "Yash Tmkc",
-      "msg_text": "Yash Tmkc",
-      "thread_id": "2137199453833921",
-      "delay_min": 0.01,
-      "delay_max": 0.01,
-      "rename_min": 100.0,
-      "rename_max": 200.0,
-      "owner_id": 8043772198,
-      "auto_start": true,
-      "_uid": "3934ece77660"
     }
   }
 }
