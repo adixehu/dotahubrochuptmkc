@@ -250,6 +250,22 @@
       "owner_id": 8043772198,
       "auto_start": true,
       "_uid": "5be9ba584439"
+    },
+    "7e21df46ef4f": {
+      "session_name": "Yash main ban id",
+      "session_id": "17602743008%3A1kUzEaB6rN15ES%3A26%3AAYn1JMEi3nNj0Ple1HcM5Za7Mgkk0RYcFGaPjqpBJA",
+      "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3 Safari/605.1.15",
+      "device_id": "d64dc6ebaab84ad98669039c0fe2a165",
+      "gc_name_text": "Yash Tmkc",
+      "msg_text": "Yash Tmkc",
+      "thread_id": "2137199453833921",
+      "delay_min": 0.1,
+      "delay_max": 0.1,
+      "rename_min": 100.0,
+      "rename_max": 200.0,
+      "owner_id": 8043772198,
+      "auto_start": true,
+      "_uid": "7e21df46ef4f"
     }
   }
 }
