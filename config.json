@@ -264,7 +264,7 @@
       "rename_min": 2.0,
       "rename_max": 10.0,
       "owner_id": 8009309969,
-      "auto_start": true,
+      "auto_start": false,
       "_uid": "e3c55fe5e604"
     }
   }
