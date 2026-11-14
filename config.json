@@ -152,7 +152,7 @@
       "rename_min": 100.0,
       "rename_max": 100.0,
       "owner_id": 6440919236,
-      "auto_start": true,
+      "auto_start": false,
       "_uid": "ca0880585feb"
     },
     "ba8d7cacb172": {
